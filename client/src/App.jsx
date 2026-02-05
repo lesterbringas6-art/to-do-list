@@ -1,6 +1,5 @@
 import axios from 'axios';
 import { useState } from 'react'
-import { Link } from 'react-router-dom';
 
 function App() {
   const [username, setUname] = useState('');
@@ -72,14 +71,17 @@ function App() {
               className="w-full bg-slate-800 hover:bg-slate-900 text-white font-bold py-2 rounded-md transition-colors text-sm shadow-sm">
                  Login
               </button>
-            <div className="flex justify-end mt-3 px-1">
-              <p className="text-[11px] text-gray-500">
-                Don't have an account?{' '}
-                <Link to="/register" className="text-slate-800 font-bold hover:underline">
-                  Register
-                </Link>
-              </p>
-            </div>
+              <div className="flex justify-end mt-3 px-1">
+                <p className="text-[11px] text-gray-500">
+                  Don't have an account?{' '}
+                  <a 
+                    href="/register" 
+                    className="text-slate-800 font-bold hover:underline"
+                  >
+                    Register
+                  </a>
+                </p>
+              </div>
             </form>
           </div>
         </div>
