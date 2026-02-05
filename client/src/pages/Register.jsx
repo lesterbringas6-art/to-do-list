@@ -104,6 +104,14 @@ function Register() {
             >
               Register
             </button>
+            <div className="flex justify-end mt-3 px-1">
+              <p className="text-[11px] text-gray-500">
+                already have an account?{' '}
+                <Link to="/" className="text-slate-800 font-bold hover:underline">
+                  login
+                </Link>
+              </p>
+            </div>
           </form>
         </div>
       </div>
