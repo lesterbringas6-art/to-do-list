@@ -74,12 +74,7 @@ function App() {
               <div className="flex justify-end mt-3 px-1">
                 <p className="text-[11px] text-gray-500">
                   Don't have an account?{' '}
-                  <a 
-                    href="/register" 
-                    className="text-slate-800 font-bold hover:underline"
-                  >
-                    Register
-                  </a>
+                  <Link to="/register">Register here</Link>
                 </p>
               </div>
             </form>
