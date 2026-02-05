@@ -10,7 +10,7 @@ function Home() {
   // State for the new list title input
   const [newListTitle, setNewListTitle] = useState("");
 
-  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+  const API_URL = import.meta.env.VITE_API_URL || 'https://to-do-list-1e06.onrender.com';
 
   const fetchData = async () => {
     try {
