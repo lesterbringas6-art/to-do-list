@@ -6,7 +6,7 @@ import  './css/globals.css/'
 
 import { BrowserRouter,Routes,Route } from 'react-router-dom';
 import ListItem from './pages/ListItem.jsx'
-import Home from './pages/home.jsx'
+import Home from './pages/Home.jsx'
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
