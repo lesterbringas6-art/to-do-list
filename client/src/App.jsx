@@ -5,7 +5,7 @@ function App() {
   const [username, setUname] = useState('');
   const [password, setPass] = useState('');
 
-  const API_URL = import.meta.env.VITE_API_URL || 'https://to-do-list-1e06.onrender.com';
+  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
   const handleLogin = async () => {
   try {
