@@ -81,7 +81,7 @@ function App() {
                     Register
                   </a>
                 </p>
-              </div>s
+              </div>
             </form>
           </div>
         </div>
