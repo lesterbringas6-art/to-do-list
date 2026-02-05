@@ -97,59 +97,6 @@ app.post('/add-items', async (req, res) => {
     }
 });
 
-app.get('/get-items/:list_id', async (req, res) => {
-    const { list_id } = req.params;
-
-    try {
-        const result = await pool.query(
-            'SELECT * FROM items WHERE list_id = $1 ORDER BY id ASC', 
-            [list_id]
-        );
-        res.status(200).json(result.rows);
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ success: false, message: "Database error" });
-    }
-});
-
-app.put('/edit-item/:id', async (req, res) => {
-    const { id } = req.params;
-    const { description, status } = req.body;
-
-    try {
-        const result = await pool.query(
-            `UPDATE items SET description = $1, status = $2 WHERE id = $3`,
-            [description, status, id]
-        );
-
-        if (result.rowCount === 0) {
-            return res.status(404).json({ success: false, message: "Item not found" });
-        }
-
-        res.status(200).json({ success: true, message: "Item updated successfully" });
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ success: false, message: "Database error" });
-    }
-});
-
-app.delete('/delete-item/:id', async (req, res) => {
-    const { id } = req.params;
-
-    try {
-        const result = await pool.query('DELETE FROM items WHERE id = $1', [id]);
-
-        if (result.rowCount === 0) {
-            return res.status(404).json({ success: false, message: "Item not found" });
-        }
-
-        res.status(200).json({ success: true, message: "Item deleted successfully" });
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ success: false, message: "Database error" });
-    }
-});
-
 app.post('/register', async (req, res) => {
     const { username, password, confirm, name } = req.body;
 
