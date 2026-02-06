@@ -5,7 +5,7 @@ function Header() {
     try {
       // 1. Tell the backend to destroy the session
       // We use credentials: 'include' to ensure the session cookie is sent
-      const response = await fetch('http://localhost:3000/logout', {
+      const response = await fetch('https://to-do-list-1e06.onrender.com/logout', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
