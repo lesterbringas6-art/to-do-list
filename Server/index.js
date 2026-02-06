@@ -1,123 +1,66 @@
 import express from 'express';
-import { pool } from './db.js';
+import { pool } from './db.js'
 import session from 'express-session';
 import { hashPassword, comparePassword } from './components/hash.js';
-import cors from 'cors';
+import cors from 'cors'
 
 const app = express();
-const PORT = 3000;
-
-// --- Middleware Setup ---
-
 app.use(express.json());
-
-// IMPORTANT: CORS must allow credentials for sessions to work
-app.use(cors({
-    origin: 'http://localhost:5173', // Replace with your frontend URL (e.g., Vite/React)
-    credentials: true
-}));
-
+app.use(cors());
 app.use(session({
     secret: 'your_secret_key',
     resave: false,
     saveUninitialized: false,
-    cookie: { 
-        maxAge: 24 * 60 * 60 * 1000,
-        secure: false, // Set to true if using HTTPS
-        httpOnly: true 
-    }
+    cookie: { maxAge: 24 * 60 * 60 * 1000 }
 }));
+const PORT = 3000;
 
-// Auth Middleware to protect private routes
-const isAuthenticated = (req, res, next) => {
-    if (req.session.user) {
-        next();
-    } else {
-        res.status(401).json({ success: false, message: "Unauthorized. Please log in." });
-    }
-};
+app.post('/add-list', async (req , res) => {
+    const { title } = req.body;
 
-// --- Authentication Routes ---
+    await pool.query(`INSERT INTO list (title, status) VALUES($1,$2)`, [title,"pending"]);
 
-app.post('/register', async (req, res) => {
-    const { username, password, confirm, name } = req.body;
-
-    if (!username || !password || !name) {
-        return res.status(400).json({ success: false, message: "Missing fields" });
-    }
-    if (password !== confirm) {
-        return res.status(400).json({ success: false, message: "Passwords do not match" });
-    }
+    res.status(200).json({success:true,message: "title added Successfully"});
+});
+app.delete('/delete-list/:id', async (req, res) => {
+    const { id } = req.params;
 
     try {
-        const checkUser = await pool.query('SELECT * FROM user_accounts WHERE username = $1', [username]);
-        if (checkUser.rows.length > 0) {
-            return res.status(400).json({ success: false, message: "Username already exists" });
+        const result = await pool.query('DELETE FROM list WHERE id = $1', [id]);
+
+        if (result.rowCount === 0) {
+            return res.status(404).json({ success: false, message: "List not found" });
         }
 
-        const hashedPassword = await hashPassword(password);
-        await pool.query(
-            'INSERT INTO user_accounts (username, password, name) VALUES($1, $2, $3)', 
-            [username, hashedPassword, name]
+        res.status(200).json({ success: true, message: "List deleted successfully" });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ success: false, message: "Database error", error: error.message });
+    }
+});
+
+app.put('/edit-list/:id', async (req, res) => {
+    const { id } = req.params;
+    const { title, status } = req.body;
+
+    try {
+        const result = await pool.query(
+            `UPDATE list SET title = $1, status = $2 WHERE id = $3`,
+            [title, status, id]
         );
 
-        res.status(200).json({ success: true, message: "Registered successfully" });
-    } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
-    }
-});
-
-app.post('/login', async (req, res) => {
-    const { username, password } = req.body;
-
-    try {
-        const result = await pool.query('SELECT id, username, password, name FROM user_accounts WHERE username = $1', [username]);
-        const user = result.rows[0];
-
-        if (user && await comparePassword(password, user.password)) {
-            // Store user info in session
-            req.session.user = {
-                user_id: user.id,
-                name: user.name
-            };
-
-            res.status(200).json({
-                success: true,
-                message: "Login successful",
-                user: { name: user.name } 
-            });
-        } else {
-            res.status(400).json({ success: false, message: "Invalid credentials" });
+        if (result.rowCount === 0) {
+            return res.status(404).json({ success: false, message: "List not found" });
         }
+
+        res.status(200).json({ success: true, message: "List updated successfully" });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error(error);
+        res.status(500).json({ success: false, message: "Database error", error: error.message });
     }
 });
 
-app.post('/logout', (req, res) => {
-    req.session.destroy((err) => {
-        if (err) {
-            return res.status(500).json({ success: false, message: "Logout failed" });
-        }
-        res.clearCookie('connect.sid'); 
-        res.status(200).json({ success: true, message: "Logged out successfully" });
-    });
-});
-
-// Route to check if user is still logged in (useful for frontend page refreshes)
-app.get('/check-session', (req, res) => {
-    if (req.session.user) {
-        res.json({ loggedIn: true, user: req.session.user });
-    } else {
-        res.json({ loggedIn: false });
-    }
-});
-
-// --- List & Item Routes (Protected by isAuthenticated) ---
-
-
-
-app.get('/get-lists', isAuthenticated, async (req, res) => {
+app.get('/get-lists', async (req, res) => {
     try {
         const result = await pool.query(`
             SELECT l.*, 
@@ -132,78 +75,110 @@ app.get('/get-lists', isAuthenticated, async (req, res) => {
     }
 });
 
-app.post('/add-list', isAuthenticated, async (req , res) => {
-    const { title } = req.body;
-    try {
-        await pool.query(`INSERT INTO list (title, status) VALUES($1,$2)`, [title, "pending"]);
-        res.status(200).json({ success: true, message: "Title added successfully" });
-    } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
-    }
-});
-
-app.put('/edit-list/:id', isAuthenticated, async (req, res) => {
-    const { id } = req.params;
-    const { title, status } = req.body;
-    try {
-        const result = await pool.query(
-            `UPDATE list SET title = $1, status = $2 WHERE id = $3`,
-            [title, status, id]
-        );
-        if (result.rowCount === 0) return res.status(404).json({ success: false, message: "List not found" });
-        res.status(200).json({ success: true, message: "List updated successfully" });
-    } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
-    }
-});
-
-app.delete('/delete-list/:id', isAuthenticated, async (req, res) => {
-    const { id } = req.params;
-    try {
-        const result = await pool.query('DELETE FROM list WHERE id = $1', [id]);
-        if (result.rowCount === 0) return res.status(404).json({ success: false, message: "List not found" });
-        res.status(200).json({ success: true, message: "List deleted successfully" });
-    } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
-    }
-});
-
-app.post('/add-items', isAuthenticated, async (req, res) => {
+app.post('/add-items', async (req, res) => {
     const { list_id, description } = req.body;
+
     try {
         await pool.query(
             `INSERT INTO items (list_id, description, status) VALUES($1, $2, $3)`,
             [list_id, description, "pending"]
         );
-        res.status(200).json({ success: true, message: "Item added successfully" });
+
+        res.status(200).json({ 
+            success: true, 
+            message: "Item added successfully" 
+        });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error(error);
+        res.status(500).json({ 
+            success: false, 
+            message: "Database error", 
+            error: error.message });
     }
 });
 
-app.put('/edit-item/:id', isAuthenticated, async (req, res) => {
+app.put('/edit-item/:id', async (req, res) => {
     const { id } = req.params;
     const { description, status } = req.body;
+
     try {
         const result = await pool.query(
             `UPDATE items SET description = $1, status = $2 WHERE id = $3`,
             [description, status, id]
         );
-        if (result.rowCount === 0) return res.status(404).json({ success: false, message: "Item not found" });
+
+        if (result.rowCount === 0) {
+            return res.status(404).json({ success: false, message: "Item not found" });
+        }
+
         res.status(200).json({ success: true, message: "Item updated successfully" });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error(error);
+        res.status(500).json({ success: false, message: "Database error", error: error.message });
     }
 });
 
-app.delete('/delete-item/:id', isAuthenticated, async (req, res) => {
+app.delete('/delete-item/:id', async (req, res) => {
     const { id } = req.params;
+
     try {
         const result = await pool.query('DELETE FROM items WHERE id = $1', [id]);
-        if (result.rowCount === 0) return res.status(404).json({ success: false, message: "Item not found" });
+
+        if (result.rowCount === 0) {
+            return res.status(404).json({ success: false, message: "Item not found" });
+        }
+
         res.status(200).json({ success: true, message: "Item deleted successfully" });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error(error);
+        res.status(500).json({ success: false, message: "Database error", error: error.message });
+    }
+});
+
+app.post('/register', async (req, res) => {
+    const { username, password, confirm, name } = req.body;
+
+    if (!username || !password || !name) {
+        return res.status(400).json({ success: false, message: "Missing fields" });
+    }
+    if (password !== confirm) {
+        return res.status(400).json({ success: false, message: "Passwords do not match" });
+    }
+
+    const checkUser = await pool.query('SELECT * FROM user_accounts WHERE username = $1', [username]);
+    if (checkUser.rows.length > 0) {
+        return res.status(400).json({ success: false, message: "Username already exists" });
+    }
+
+    const hashedPassword = await hashPassword(password);
+
+    await pool.query(
+        'INSERT INTO user_accounts (username, password, name) VALUES($1, $2, $3)', 
+        [username, hashedPassword, name]
+    );
+
+    res.status(200).json({ success: true, message: "Registered successfully" });
+});
+
+app.post('/login', async (req, res) => {
+    const { username, password } = req.body;
+
+    const result = await pool.query('SELECT id, username, password, name FROM user_accounts WHERE username = $1', [username]);
+    const user = result.rows[0];
+
+    if (user && await comparePassword(password, user.password)) {
+        req.session.user = {
+            user_id: user.id,
+            name: user.name
+        };
+
+        res.status(200).json({
+            success: true,
+            message: "Login successful",
+            user: { name: user.name } 
+        });
+    } else {
+        res.status(400).json({ success: false, message: "Invalid credentials" });
     }
 });
 
