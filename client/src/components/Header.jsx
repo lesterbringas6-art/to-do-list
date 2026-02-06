@@ -4,7 +4,7 @@ function Header() {
   const handleLogout = async () => {
     try {
       // If using Axios, ensure withCredentials is true
-      const response = await axios.post('http://localhost:3000/logout', {}, {
+      const response = await axios.post('https://to-do-list-1e06.onrender.com', {}, {
         withCredentials: true 
       });
 
