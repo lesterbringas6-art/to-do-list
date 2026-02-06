@@ -10,7 +10,7 @@ function Header() {
 
       if (response.data.success) {
         // Redirect user to login page or refresh
-        window.location.href = '/login'; 
+        window.location.href = '/'; 
       }
     } catch (error) {
       console.error("Logout failed:", error);
