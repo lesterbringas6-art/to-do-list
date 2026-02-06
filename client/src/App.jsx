@@ -76,7 +76,7 @@ function App() {
             
             <div className="flex justify-end mt-3 px-1">
               <p className="text-[11px] text-gray-500">
-                Don't have an account?{' '}
+                {' '}
                 <Link to="/register" className="text-slate-800 font-bold hover:underline">
                   Register
                 </Link>
