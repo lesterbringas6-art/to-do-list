@@ -18,7 +18,6 @@ function App() {
       });
 
       if (response.data.success) {
-        // 3. Redirect to Home
         navigate('/home'); 
       }
 
