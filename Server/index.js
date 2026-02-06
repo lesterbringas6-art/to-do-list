@@ -6,7 +6,10 @@ import cors from 'cors'
 
 const app = express();
 app.use(express.json());
-app.use(cors());
+app.use(cors({
+    origin: 'https://to-do-list-1e06.onrender.com', // Adjust to your frontend URL
+    credentials: true
+}));
 app.use(session({
     secret: 'your_secret_key',
     resave: false,
@@ -60,18 +63,21 @@ app.put('/edit-list/:id', async (req, res) => {
     }
 });
 
-app.get('/get-lists', async (req, res) => {
+app.get('/get-lists', isAuthenticated, async (req, res) => {
+    const userId = req.session.user.user_id;
     try {
         const result = await pool.query(`
             SELECT l.*, 
             COALESCE(json_agg(i.*) FILTER (WHERE i.id IS NOT NULL), '[]') AS items
             FROM list l
             LEFT JOIN items i ON l.id = i.list_id
+            WHERE l.user_id = $1
             GROUP BY l.id
-        `);
+            ORDER BY l.id DESC
+        `, [userId]);
         res.json(result.rows);
     } catch (err) {
-        res.status(500).send(err.message);
+        res.status(500).json({ success: false, message: err.message });
     }
 });
 
