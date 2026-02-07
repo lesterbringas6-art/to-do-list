@@ -6,10 +6,7 @@ import cors from 'cors'
 
 const app = express();
 app.use(express.json());
-app.use(cors({
-    origin: 'https://to-do-list-neon-two-40.vercel.app', 
-    credentials: true            
-}));
+app.use(cors());
 app.use(session({
     secret: 'your_secret_key',
     resave: false,
@@ -17,21 +14,15 @@ app.use(session({
     cookie: { maxAge: 24 * 60 * 60 * 1000 }
 }));
 const PORT = 3000;
-const isAuthenticated = (req, res, next) => {
-    if (req.session.user) {
-        return next();
-    }
-    res.status(401).json({ message: "Unauthorized" });
-};
 
-app.post('/add-list',isAuthenticated, async (req , res) => {
+app.post('/add-list', async (req , res) => {
     const { title } = req.body;
 
     await pool.query(`INSERT INTO list (title, status) VALUES($1,$2)`, [title,"pending"]);
 
     res.status(200).json({success:true,message: "title added Successfully"});
 });
-app.delete('/delete-list/:id', isAuthenticated, async (req, res) => {
+app.delete('/delete-list/:id', async (req, res) => {
     const { id } = req.params;
 
     try {
@@ -48,7 +39,7 @@ app.delete('/delete-list/:id', isAuthenticated, async (req, res) => {
     }
 });
 
-app.put('/edit-list/:id', isAuthenticated, async (req, res) => {
+app.put('/edit-list/:id', async (req, res) => {
     const { id } = req.params;
     const { title, status } = req.body;
 
@@ -69,7 +60,7 @@ app.put('/edit-list/:id', isAuthenticated, async (req, res) => {
     }
 });
 
-app.get('/get-lists', isAuthenticated, async (req, res) => {
+app.get('/get-lists', async (req, res) => {
     try {
         const result = await pool.query(`
             SELECT l.*, 
@@ -84,7 +75,7 @@ app.get('/get-lists', isAuthenticated, async (req, res) => {
     }
 });
 
-app.post('/add-items', isAuthenticated, async (req, res) => {
+app.post('/add-items', async (req, res) => {
     const { list_id, description } = req.body;
 
     try {
@@ -106,7 +97,7 @@ app.post('/add-items', isAuthenticated, async (req, res) => {
     }
 });
 
-app.put('/edit-item/:id', isAuthenticated, async (req, res) => {
+app.put('/edit-item/:id', async (req, res) => {
     const { id } = req.params;
     const { description, status } = req.body;
 
@@ -127,7 +118,7 @@ app.put('/edit-item/:id', isAuthenticated, async (req, res) => {
     }
 });
 
-app.delete('/delete-item/:id', isAuthenticated, async (req, res) => {
+app.delete('/delete-item/:id', async (req, res) => {
     const { id } = req.params;
 
     try {
@@ -189,37 +180,6 @@ app.post('/login', async (req, res) => {
     } else {
         res.status(400).json({ success: false, message: "Invalid credentials" });
     }
-});
-
-// Check if user is logged in
-app.get('/session', (req, res) => {
-    if (req.session.user) {
-        res.status(200).json({ 
-            loggedIn: true, 
-            user: req.session.user 
-        });
-    } else {
-        res.status(401).json({ 
-            loggedIn: false, 
-            message: "Not authenticated" 
-        });
-    }
-});
-
-app.post('/logout', (req, res) => {
-    req.session.destroy((err) => {
-        if (err) {
-            return res.status(500).json({ 
-                success: false, 
-                message: "Could not log out" 
-            });
-        }
-        res.clearCookie('connect.sid'); // Clears the session cookie
-        res.status(200).json({ 
-            success: true, 
-            message: "Logged out successfully" 
-        });
-    });
 });
 
 app.listen(PORT, () => {
