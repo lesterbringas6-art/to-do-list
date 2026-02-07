@@ -31,7 +31,7 @@ function App() {
   };
 
   return (
-<div className="min-h-screen bg-gradient-to-br from-[#0061FF] to-[#60EFFF] flex flex-col items-center justify-center p-4">
+<div className="min-h-screen bg-gradient-to-br from-slate-700 via-slate-800 to-slate-900 flex flex-col items-center justify-center p-4">
       <div className="max-w-xs w-full bg-white rounded-xl shadow-2xl overflow-hidden border border-gray-100">
         <div className="p-6">
           <div className="text-center mb-5">
