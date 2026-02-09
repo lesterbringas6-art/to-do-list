@@ -4,51 +4,24 @@ import session from 'express-session';
 import { hashPassword, comparePassword } from './components/hash.js';
 import cors from 'cors'
 
-FRONTEND_URL = 'https://to-do-list-neon-two-40.vercel.app'
 const app = express();
 app.use(express.json());
-
-app.use(cors({
-    origin: process.env.FRONTEND_URL, 
-    credentials: true
-}));
-
+app.use(cors());
 app.use(session({
     secret: 'your_secret_key',
     resave: false,
     saveUninitialized: false,
-    proxy: true,
-    cookie: { 
-        maxAge: 24 * 60 * 60 * 1000,
-        secure: true,
-        sameSite: 'none' 
-    }
+    cookie: { maxAge: 24 * 60 * 60 * 1000 }
 }));
 const PORT = 3000;
-const isAuthenticated = (req, res, next) => {
-    if (!req.session.user) {
-        return res.status(401).json({
-            success: false,
-            message: "Unauthorized"
-        });
-    }
-    next();
-};
 
-app.post('/add-list', isAuthenticated, async (req, res) => {
+app.post('/add-list', async (req , res) => {
     const { title } = req.body;
 
-    await pool.query(
-        `INSERT INTO list (title, status) VALUES($1,$2)`,
-        [title, "pending"]
-    );
+    await pool.query(`INSERT INTO list (title, status) VALUES($1,$2)`, [title,"pending"]);
 
-    res.status(200).json({
-        success: true,
-        message: "Title added successfully"
-    });
+    res.status(200).json({success:true,message: "title added Successfully"});
 });
-
 app.delete('/delete-list/:id', async (req, res) => {
     const { id } = req.params;
 
@@ -208,38 +181,6 @@ app.post('/login', async (req, res) => {
         res.status(400).json({ success: false, message: "Invalid credentials" });
     }
 });
-
-app.get('/session', (req, res) => {
-    if (req.session.user) {
-        return res.status(200).json({
-            loggedIn: true,
-            user: req.session.user
-        });
-    }
-
-    res.status(200).json({
-        loggedIn: false
-    });
-});
-
-app.post('/logout', (req, res) => {
-    req.session.destroy(err => {
-        if (err) {
-            console.error(err);
-            return res.status(500).json({
-                success: false,
-                message: "Logout failed"
-            });
-        }
-
-        res.clearCookie('connect.sid'); // default session cookie name
-        res.status(200).json({
-            success: true,
-            message: "Logged out successfully"
-        });
-    });
-});
-
 
 app.listen(PORT, () => {
     console.log(`Server listening on the port ${PORT}`);
