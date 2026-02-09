@@ -6,7 +6,24 @@ import cors from 'cors'
 
 const app = express();
 app.use(express.json());
-app.use(cors());
+const allowedOrigins = [
+    'https://to-do-list-neon-two-40.vercel.app',
+];
+
+app.use(cors({
+    origin: function (origin, callback) {
+        if (!origin) return callback(null, true);
+
+        if (origin.endsWith('.vercel.app') || allowedOrigins.indexOf(origin) !== -1) {
+            callback(null, true);
+        } else {
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
+}));
 app.set('trust proxy', 1); 
 app.use(session({
     secret: 'your_secret_key',
