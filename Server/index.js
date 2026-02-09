@@ -6,8 +6,9 @@ import cors from 'cors'
 
 const app = express();
 app.use(express.json());
+
 app.use(cors({
-    origin: 'https://to-do-list-neon-two-40.vercel.app',
+    origin: 'https://to-do-list-neon-two-40.vercel.app/',
     credentials: true
 }));
 
@@ -15,7 +16,12 @@ app.use(session({
     secret: 'your_secret_key',
     resave: false,
     saveUninitialized: false,
-    cookie: { maxAge: 24 * 60 * 60 * 1000 }
+    proxy: true,
+    cookie: { 
+        maxAge: 24 * 60 * 60 * 1000,
+        secure: true,
+        sameSite: 'none' 
+    }
 }));
 const PORT = 3000;
 const isAuthenticated = (req, res, next) => {
