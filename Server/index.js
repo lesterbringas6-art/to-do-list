@@ -7,37 +7,42 @@ import cors from 'cors'
 const app = express();
 app.use(express.json());
 app.use(cors({
-    origin: 'https://to-do-list-neon-two-40.vercel.app/', 
-    credentials: true    
+    origin: [
+        'https://to-do-list-neon-two-40.vercel.app',
+        'https://to-do-list-git-main-lesterbringas6-3941s-projects.vercel.app'
+    ],
+    credentials: true
 }));
 
+app.set('trust proxy', 1); // Required for sessions to work on Vercel/Heroku
+
 app.use(session({
-    secret: 'your_secret_key',
+    secret: process.env.SESSION_SECRET || 'your_secret_key',
     resave: false,
     saveUninitialized: false,
     cookie: { 
         maxAge: 24 * 60 * 60 * 1000,
-        secure: true, 
-        sameSite: 'lax' 
+        secure: true,      // Vercel uses HTTPS, so this must be true
+        sameSite: 'none'   // Necessary for cross-site cookies between frontend and backend
     }
 }));
-const isAuthenticated = (req, res, next) => {
-    if (req.session.user) {
-        return next(); // User is logged in, proceed to the route
+const checkAuth = (req, res, next) => {
+    if (req.session && req.session.user) {
+        next();
     } else {
-        res.status(401).json({ success: false, message: "Unauthorized: Please log in" });
+        res.status(401).json({ success: false, message: "Unauthorized" });
     }
 };
 const PORT = 3000;
 
-app.post('/add-list', async (req , res) => {
+app.post('/add-list',checkAuth, async (req , res) => {
     const { title } = req.body;
 
     await pool.query(`INSERT INTO list (title, status) VALUES($1,$2)`, [title,"pending"]);
 
     res.status(200).json({success:true,message: "title added Successfully"});
 });
-app.delete('/delete-list/:id', async (req, res) => {
+app.delete('/delete-list/:id',checkAuth, async (req, res) => {
     const { id } = req.params;
 
     try {
@@ -54,7 +59,7 @@ app.delete('/delete-list/:id', async (req, res) => {
     }
 });
 
-app.put('/edit-list/:id', async (req, res) => {
+app.put('/edit-list/:id',checkAuth, async (req, res) => {
     const { id } = req.params;
     const { title, status } = req.body;
 
@@ -75,7 +80,7 @@ app.put('/edit-list/:id', async (req, res) => {
     }
 });
 
-app.get('/get-lists', isAuthenticated, async (req, res) => {
+app.get('/get-lists', checkAuth, async (req, res) => {
     try {
         const result = await pool.query(`
             SELECT l.*, 
@@ -92,7 +97,7 @@ app.get('/get-lists', isAuthenticated, async (req, res) => {
     }
 });
 
-app.post('/add-items', async (req, res) => {
+app.post('/add-items',checkAuth, async (req, res) => {
     const { list_id, description } = req.body;
 
     try {
@@ -114,7 +119,7 @@ app.post('/add-items', async (req, res) => {
     }
 });
 
-app.put('/edit-item/:id', async (req, res) => {
+app.put('/edit-item/:id',checkAuth, async (req, res) => {
     const { id } = req.params;
     const { description, status } = req.body;
 
@@ -135,7 +140,7 @@ app.put('/edit-item/:id', async (req, res) => {
     }
 });
 
-app.delete('/delete-item/:id', async (req, res) => {
+app.delete('/delete-item/:id',checkAuth, async (req, res) => {
     const { id } = req.params;
 
     try {
