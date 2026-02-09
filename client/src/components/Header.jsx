@@ -1,34 +1,19 @@
-import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import { Link, useNavigate } from 'react-router-dom';
 
 function Header() {
   const navigate = useNavigate();
 
-  const handleLogout = async () => {
-    try {
-      // 1. Call the backend logout route
-      // Replace with your actual Render URL
-      await axios.post('https://to-do-list-1e06.onrender.com/api/logout', {}, {
-        withCredentials: true // MANDATORY: This sends the session cookie to the server
-      });
-
-      // 2. Clear any local state if you use it (optional)
-      // localStorage.removeItem('user'); 
-
-      // 3. Redirect to the login/home page
-      navigate('/');
-      
-      // Optional: Force a refresh to clear any cached user data in the app state
-      window.location.reload(); 
-    } catch (error) {
-      console.error("Logout failed:", error);
-      // Even if the server call fails, it's usually safer to redirect the user
-      navigate('/');
-    }
+  const handleLogout = () => {
+    // 1. Clear your auth tokens/session logic here
+    // localStorage.removeItem('token'); 
+    
+    // 2. Redirect to the home page
+    navigate('/');
   };
 
   return (
     <header className="bg-slate-800 p-4 shadow-lg flex justify-between items-center">
+      {/* Spacer to keep title centered if needed, or just alignment */}
       <div className="w-20"></div> 
 
       <h1 className="text-white text-3xl font-bold tracking-tight">
@@ -38,7 +23,7 @@ function Header() {
       <div className="w-20 flex justify-end">
         <button 
           onClick={handleLogout}
-          className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded-md text-sm font-medium transition-colors"
+          className="text-slate-300 hover:text-white text-sm font-medium transition-colors"
         >
           Logout
         </button>
