@@ -6,22 +6,26 @@ function Header() {
   const handleLogout = async () => {
     try {
       // 1. Call the backend logout endpoint
-      const response = await fetch('http://localhost:3000/logout', { 
+      const response = await fetch('https://to-do-list-1e06.onrender.com/logout', {
         method: 'POST',
-        // Important: This allows the browser to send the session cookie
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        // Important: Include credentials to send the session cookie
         credentials: 'include', 
       });
 
-      const data = await response.json();
+      if (response.ok) {
+        // 2. Clear any local state if you have it (optional)
+        // localStorage.removeItem('user'); 
 
-      if (data.success) {
-        // 2. Redirect to the login/home page upon success
+        // 3. Redirect to the login or home page
         navigate('/');
       } else {
-        console.error("Logout failed:", data.message);
+        console.error('Logout failed on the server');
       }
     } catch (error) {
-      console.error("Error during logout:", error);
+      console.error('Error during logout:', error);
     }
   };
 
