@@ -6,13 +6,28 @@ import cors from 'cors'
 
 const app = express();
 app.use(express.json());
-app.use(cors());
+app.use(cors({
+    origin: 'https://to-do-list-neon-two-40.vercel.app/', 
+    credentials: true    
+}));
+
 app.use(session({
     secret: 'your_secret_key',
     resave: false,
     saveUninitialized: false,
-    cookie: { maxAge: 24 * 60 * 60 * 1000 }
+    cookie: { 
+        maxAge: 24 * 60 * 60 * 1000,
+        secure: true, 
+        sameSite: 'lax' 
+    }
 }));
+const isAuthenticated = (req, res, next) => {
+    if (req.session.user) {
+        return next(); // User is logged in, proceed to the route
+    } else {
+        res.status(401).json({ success: false, message: "Unauthorized: Please log in" });
+    }
+};
 const PORT = 3000;
 
 app.post('/add-list', async (req , res) => {
@@ -60,15 +75,17 @@ app.put('/edit-list/:id', async (req, res) => {
     }
 });
 
-app.get('/get-lists', async (req, res) => {
+app.get('/get-lists', isAuthenticated, async (req, res) => {
     try {
         const result = await pool.query(`
             SELECT l.*, 
             COALESCE(json_agg(i.*) FILTER (WHERE i.id IS NOT NULL), '[]') AS items
             FROM list l
             LEFT JOIN items i ON l.id = i.list_id
+            WHERE l.user_id = $1
             GROUP BY l.id
-        `);
+        `, [req.session.user.user_id]);
+        
         res.json(result.rows);
     } catch (err) {
         res.status(500).send(err.message);
@@ -180,6 +197,16 @@ app.post('/login', async (req, res) => {
     } else {
         res.status(400).json({ success: false, message: "Invalid credentials" });
     }
+});
+
+app.post('/logout', (req, res) => {
+    req.session.destroy((err) => {
+        if (err) {
+            return res.status(500).json({ success: false, message: "Could not log out" });
+        }
+        res.clearCookie('connect.sid'); // Clears the session cookie
+        res.status(200).json({ success: true, message: "Logged out successfully" });
+    });
 });
 
 app.listen(PORT, () => {
