@@ -4,11 +4,12 @@ import session from 'express-session';
 import { hashPassword, comparePassword } from './components/hash.js';
 import cors from 'cors'
 
+FRONTEND_URL = 'https://to-do-list-neon-two-40.vercel.app'
 const app = express();
 app.use(express.json());
 
 app.use(cors({
-    origin: 'https://to-do-list-neon-two-40.vercel.app/',
+    origin: process.env.FRONTEND_URL, 
     credentials: true
 }));
 
