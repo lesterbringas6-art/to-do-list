@@ -1,31 +1,29 @@
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 
 function Header() {
   const navigate = useNavigate();
 
   const handleLogout = async () => {
     try {
-      // 1. Call the backend logout endpoint
-      const response = await fetch('https://to-do-list-1e06.onrender.com/logout', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        // Important: Include credentials to send the session cookie
-        credentials: 'include', 
+      // 1. Call the backend logout route
+      // Replace with your actual Render URL
+      await axios.post('https://to-do-list-1e06.onrender.com/api/logout', {}, {
+        withCredentials: true // MANDATORY: This sends the session cookie to the server
       });
 
-      if (response.ok) {
-        // 2. Clear any local state if you have it (optional)
-        // localStorage.removeItem('user'); 
+      // 2. Clear any local state if you use it (optional)
+      // localStorage.removeItem('user'); 
 
-        // 3. Redirect to the login or home page
-        navigate('/');
-      } else {
-        console.error('Logout failed on the server');
-      }
+      // 3. Redirect to the login/home page
+      navigate('/');
+      
+      // Optional: Force a refresh to clear any cached user data in the app state
+      window.location.reload(); 
     } catch (error) {
-      console.error('Error during logout:', error);
+      console.error("Logout failed:", error);
+      // Even if the server call fails, it's usually safer to redirect the user
+      navigate('/');
     }
   };
 
@@ -40,7 +38,7 @@ function Header() {
       <div className="w-20 flex justify-end">
         <button 
           onClick={handleLogout}
-          className="text-slate-300 hover:text-white text-sm font-medium transition-colors"
+          className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded-md text-sm font-medium transition-colors"
         >
           Logout
         </button>
