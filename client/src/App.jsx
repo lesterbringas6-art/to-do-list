@@ -1,12 +1,12 @@
 import axios from 'axios';
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom'; // 1. Import useNavigate
+import { Link, useNavigate } from 'react-router-dom';
 
 function App() {
   const [username, setUname] = useState('');
   const [password, setPass] = useState('');
   
-  const navigate = useNavigate(); // 2. Initialize navigate
+  const navigate = useNavigate(); 
 
   const API_URL = import.meta.env.VITE_API_URL || 'https://to-do-list-1e06.onrender.com';
 
