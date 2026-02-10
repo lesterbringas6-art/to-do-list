@@ -5,25 +5,47 @@ import { hashPassword, comparePassword } from './components/hash.js';
 import cors from 'cors';
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
+
+// 1. TRUST PROXY: Essential for cookies on Render/Vercel
+app.set('trust proxy', 1);
+
 app.use(express.json());
+
+// 2. MULTI-ORIGIN CORS: Supports local coding and production
+const allowedOrigins = [
+    'http://localhost:5173',
+    'https://to-do-list-neon-two-40.vercel.app' 
+];
+
 app.use(cors({
-    origin: 'https://to-do-list-1e06.onrender.com', 
+    origin: function (origin, callback) {
+        // Allow requests with no origin (like mobile apps or curl)
+        if (!origin) return callback(null, true);
+        if (allowedOrigins.indexOf(origin) === -1) {
+            const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
+            return callback(new Error(msg), false);
+        }
+        return callback(null, true);
+    },
     credentials: true 
 }));
 
+// 3. SECURE SESSION: Cross-domain compatible
 app.use(session({
-    secret: 'your_secret_key',
+    secret: process.env.SESSION_SECRET || 'your_secret_key', // Recommended to use env var
     resave: false,
     saveUninitialized: false,
+    proxy: true,
     cookie: { 
-        secure: true,
+        secure: true,      
         httpOnly: true, 
+        sameSite: 'none',  
         maxAge: 24 * 60 * 60 * 1000 
     }
 }));
 
-// Helper Middleware to protect routes
+// --- Middleware ---
 const isAuthenticated = (req, res, next) => {
     if (req.session.user) {
         return next();
@@ -35,26 +57,16 @@ const isAuthenticated = (req, res, next) => {
 
 app.post('/register', async (req, res) => {
     const { username, password, confirm, name } = req.body;
-
-    if (!username || !password || !name) {
-        return res.status(400).json({ success: false, message: "Missing fields" });
-    }
-    if (password !== confirm) {
-        return res.status(400).json({ success: false, message: "Passwords do not match" });
+    if (!username || !password || !name || password !== confirm) {
+        return res.status(400).json({ success: false, message: "Invalid input or passwords do not match" });
     }
 
     try {
         const checkUser = await pool.query('SELECT * FROM user_accounts WHERE username = $1', [username]);
-        if (checkUser.rows.length > 0) {
-            return res.status(400).json({ success: false, message: "Username already exists" });
-        }
+        if (checkUser.rows.length > 0) return res.status(400).json({ success: false, message: "Username exists" });
 
         const hashedPassword = await hashPassword(password);
-        await pool.query(
-            'INSERT INTO user_accounts (username, password, name) VALUES($1, $2, $3)', 
-            [username, hashedPassword, name]
-        );
-
+        await pool.query('INSERT INTO user_accounts (username, password, name) VALUES($1, $2, $3)', [username, hashedPassword, name]);
         res.status(200).json({ success: true, message: "Registered successfully" });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
@@ -63,22 +75,13 @@ app.post('/register', async (req, res) => {
 
 app.post('/login', async (req, res) => {
     const { username, password } = req.body;
-
     try {
         const result = await pool.query('SELECT id, username, password, name FROM user_accounts WHERE username = $1', [username]);
         const user = result.rows[0];
 
         if (user && await comparePassword(password, user.password)) {
-            req.session.user = {
-                user_id: user.id,
-                name: user.name
-            };
-
-            res.status(200).json({
-                success: true,
-                message: "Login successful",
-                user: { name: user.name } 
-            });
+            req.session.user = { user_id: user.id, name: user.name };
+            res.status(200).json({ success: true, user: { name: user.name } });
         } else {
             res.status(400).json({ success: false, message: "Invalid credentials" });
         }
@@ -87,27 +90,19 @@ app.post('/login', async (req, res) => {
     }
 });
 
-// GET Current Session User
 app.get('/session', (req, res) => {
-    if (req.session.user) {
-        res.json({ loggedIn: true, user: req.session.user });
-    } else {
-        res.json({ loggedIn: false });
-    }
+    res.json(req.session.user ? { loggedIn: true, user: req.session.user } : { loggedIn: false });
 });
 
-// LOGOUT Route
 app.post('/logout', (req, res) => {
     req.session.destroy((err) => {
-        if (err) {
-            return res.status(500).json({ success: false, message: "Could not log out" });
-        }
-        res.clearCookie('connect.sid'); // Clears the session cookie
-        res.status(200).json({ success: true, message: "Logged out successfully" });
+        if (err) return res.status(500).json({ success: false });
+        res.clearCookie('connect.sid', { secure: true, sameSite: 'none' });
+        res.status(200).json({ success: true });
     });
 });
 
-// --- List Routes (Protected) ---
+// --- List & Item Routes (Protected) ---
 
 app.get('/get-lists', isAuthenticated, async (req, res) => {
     try {
@@ -128,81 +123,60 @@ app.post('/add-list', isAuthenticated, async (req , res) => {
     const { title } = req.body;
     try {
         await pool.query(`INSERT INTO list (title, status) VALUES($1,$2)`, [title,"pending"]);
-        res.status(200).json({success:true,message: "title added Successfully"});
+        res.status(200).json({success:true});
     } catch (error) {
         res.status(500).json({ success: false, error: error.message });
     }
 });
 
 app.delete('/delete-list/:id', isAuthenticated, async (req, res) => {
-    const { id } = req.params;
     try {
-        const result = await pool.query('DELETE FROM list WHERE id = $1', [id]);
-        if (result.rowCount === 0) {
-            return res.status(404).json({ success: false, message: "List not found" });
-        }
-        res.status(200).json({ success: true, message: "List deleted successfully" });
+        await pool.query('DELETE FROM list WHERE id = $1', [req.params.id]);
+        res.status(200).json({ success: true });
     } catch (error) {
-        res.status(500).json({ success: false, message: "Database error", error: error.message });
+        res.status(500).json({ success: false, error: error.message });
     }
 });
 
 app.put('/edit-list/:id', isAuthenticated, async (req, res) => {
-    const { id } = req.params;
     const { title, status } = req.body;
     try {
-        const result = await pool.query(
-            `UPDATE list SET title = $1, status = $2 WHERE id = $3`,
-            [title, status, id]
-        );
-        if (result.rowCount === 0) return res.status(404).json({ success: false, message: "Not found" });
-        res.status(200).json({ success: true, message: "Updated successfully" });
+        await pool.query(`UPDATE list SET title = $1, status = $2 WHERE id = $3`, [title, status, req.params.id]);
+        res.status(200).json({ success: true });
     } catch (error) {
-        res.status(500).json({ success: false, error: error.message });
+        res.status(500).json({ success: false });
     }
 });
-
-// --- Item Routes (Protected) ---
 
 app.post('/add-items', isAuthenticated, async (req, res) => {
     const { list_id, description } = req.body;
     try {
-        await pool.query(
-            `INSERT INTO items (list_id, description, status) VALUES($1, $2, $3)`,
-            [list_id, description, "pending"]
-        );
-        res.status(200).json({ success: true, message: "Item added" });
+        await pool.query(`INSERT INTO items (list_id, description, status) VALUES($1, $2, $3)`, [list_id, description, "pending"]);
+        res.status(200).json({ success: true });
     } catch (error) {
-        res.status(500).json({ success: false, error: error.message });
+        res.status(500).json({ success: false });
     }
 });
 
 app.put('/edit-item/:id', isAuthenticated, async (req, res) => {
-    const { id } = req.params;
     const { description, status } = req.body;
     try {
-        const result = await pool.query(
-            `UPDATE items SET description = $1, status = $2 WHERE id = $3`,
-            [description, status, id]
-        );
-        if (result.rowCount === 0) return res.status(404).json({ success: false });
-        res.status(200).json({ success: true, message: "Item updated" });
+        await pool.query(`UPDATE items SET description = $1, status = $2 WHERE id = $3`, [description, status, req.params.id]);
+        res.status(200).json({ success: true });
     } catch (error) {
-        res.status(500).json({ success: false, error: error.message });
+        res.status(500).json({ success: false });
     }
 });
 
 app.delete('/delete-item/:id', isAuthenticated, async (req, res) => {
-    const { id } = req.params;
     try {
-        const result = await pool.query('DELETE FROM items WHERE id = $1', [id]);
-        if (result.rowCount === 0) return res.status(404).json({ success: false });
-        res.status(200).json({ success: true, message: "Item deleted" });
+        await pool.query('DELETE FROM items WHERE id = $1', [req.params.id]);
+        res.status(200).json({ success: true });
     } catch (error) {
-        res.status(500).json({ success: false, error: error.message });
+        res.status(500).json({ success: false });
     }
 });
 
 app.listen(PORT, () => {
-    console.log(`Server listening on the port ${PORT}`);
+    console.log(`Server listening on port ${PORT}`);
 });
