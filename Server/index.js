@@ -15,7 +15,7 @@ app.use(express.json());
 // 2. MULTI-ORIGIN CORS: Supports local coding and production
 // 2. UPDATED CORS: Allow localhost, your main domain, and Vercel preview deployments
 const allowedOrigins = [
-    'http://localhost:5173',
+    'https://to-do-list-1e06.onrender.com',
     'https://to-do-list-neon-two-40.vercel.app'
 ];
 
