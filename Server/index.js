@@ -8,7 +8,7 @@ const app = express();
 const PORT = 3000;
 app.use(express.json());
 app.use(cors({
-    origin: 'http://localhost:5173', 
+    origin: 'https://to-do-list-1e06.onrender.com', 
     credentials: true 
 }));
 
