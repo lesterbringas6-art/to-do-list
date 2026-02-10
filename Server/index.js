@@ -13,20 +13,24 @@ app.set('trust proxy', 1);
 app.use(express.json());
 
 // 2. MULTI-ORIGIN CORS: Supports local coding and production
+// 2. UPDATED CORS: Allow localhost, your main domain, and Vercel preview deployments
 const allowedOrigins = [
     'http://localhost:5173',
-    'https://to-do-list-neon-two-40.vercel.app' 
+    'https://to-do-list-neon-two-40.vercel.app'
 ];
 
 app.use(cors({
     origin: function (origin, callback) {
-        // Allow requests with no origin (like mobile apps or curl)
+        // 1. Allow requests with no origin (like mobile apps or curl)
         if (!origin) return callback(null, true);
-        if (allowedOrigins.indexOf(origin) === -1) {
-            const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
-            return callback(new Error(msg), false);
+
+        // 2. Allow if origin is in our list OR if it's a vercel.app preview URL
+        if (allowedOrigins.indexOf(origin) !== -1 || origin.endsWith('.vercel.app')) {
+            callback(null, true);
+        } else {
+            console.log("CORS Blocked Origin:", origin);
+            callback(new Error('Not allowed by CORS'));
         }
-        return callback(null, true);
     },
     credentials: true 
 }));
