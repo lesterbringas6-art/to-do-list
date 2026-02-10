@@ -1,35 +1,21 @@
 import axios from 'axios';
-import { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom'; // 1. Import useNavigate
 
 function App() {
   const [username, setUname] = useState('');
   const [password, setPass] = useState('');
   
-  const navigate = useNavigate(); 
-  const API_URL = import.meta.env.VITE_API_URL || 'https://to-do-list-1e06.onrender.com';
+  const navigate = useNavigate(); // 2. Initialize navigate
 
-  // Check if user is already logged in when the page loads
-  useEffect(() => {
-    const checkSession = async () => {
-      try {
-        const res = await axios.get(`${API_URL}/session`, { withCredentials: true });
-        if (res.data.loggedIn) {
-          navigate('/home');
-        }
-      } catch (err) {
-        console.log("No active session found");
-      }
-    };
-    checkSession();
-  }, [navigate, API_URL]);
+  const API_URL = import.meta.env.VITE_API_URL || 'https://to-do-list-1e06.onrender.com';
 
   const handleLogin = async () => {
     try {
-      const response = await axios.post(`${API_URL}/login`, 
-        { username, password }, 
-        { withCredentials: true } // CRITICAL: This allows cookies to work
-      );
+      const response = await axios.post(`${API_URL}/login`, {
+        username,
+        password
+      });
 
       if (response.data.success) {
         navigate('/home'); 
@@ -45,7 +31,7 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-700 via-slate-800 to-slate-900 flex flex-col items-center justify-center p-4">
+<div className="min-h-screen bg-gradient-to-br from-slate-700 via-slate-800 to-slate-900 flex flex-col items-center justify-center p-4">
       <div className="max-w-xs w-full bg-white rounded-xl shadow-2xl overflow-hidden border border-gray-100">
         <div className="p-6">
           <div className="text-center mb-5">
@@ -81,7 +67,7 @@ function App() {
             </div>
 
             <button 
-              type="submit" // Changed to submit for better accessibility
+              type="button"
               onClick={handleLogin}
               className="w-full bg-slate-800 hover:bg-slate-900 text-white font-bold py-2 rounded-md transition-colors text-sm shadow-sm">
                 Login

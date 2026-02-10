@@ -1,30 +1,19 @@
-import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import { Link, useNavigate } from 'react-router-dom';
 
 function Header() {
   const navigate = useNavigate();
-  const API_URL = import.meta.env.VITE_API_URL || 'https://to-do-list-1e06.onrender.com';
 
-  const handleLogout = async () => {
-    try {
-      // 1. Tell the server to destroy the session
-      await axios.post(`${API_URL}/logout`, {}, { withCredentials: true });
-      
-      // 2. Clear any local data (if you had any)
-      // localStorage.clear(); 
-
-      // 3. Redirect to the login page
-      navigate('/');
-    } catch (err) {
-      console.error("Logout failed:", err);
-      // Even if the server call fails, we usually want to redirect the user
-      navigate('/');
-    }
+  const handleLogout = () => {
+    // 1. Clear your auth tokens/session logic here
+    // localStorage.removeItem('token'); 
+    
+    // 2. Redirect to the home page
+    navigate('/');
   };
 
   return (
     <header className="bg-slate-800 p-4 shadow-lg flex justify-between items-center">
-      {/* Spacer to keep title centered */}
+      {/* Spacer to keep title centered if needed, or just alignment */}
       <div className="w-20"></div> 
 
       <h1 className="text-white text-3xl font-bold tracking-tight">

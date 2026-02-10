@@ -7,18 +7,15 @@ function Home() {
   const [loading, setLoading] = useState(true);
   const [expandedListId, setExpandedListId] = useState(null);
   const [newListTitle, setNewListTitle] = useState("");
+  
+  // State for the new item description input
   const [newItemDesc, setNewItemDesc] = useState("");
 
   const API_URL = import.meta.env.VITE_API_URL || 'https://to-do-list-1e06.onrender.com';
 
-  // --- Global Axios Config ---
-  // Adding this constant makes it easier to pass credentials
-  const config = { withCredentials: true };
-
   const fetchData = async () => {
     try {
-      // Added config here
-      const response = await axios.get(`${API_URL}/get-lists`, config);
+      const response = await axios.get(`${API_URL}/get-lists`);
       setLists(response.data);
     } catch (err) {
       console.error("Error fetching data:", err);
@@ -36,8 +33,7 @@ function Home() {
     e.preventDefault();
     if (!newListTitle.trim()) return;
     try {
-      // Added config here
-      await axios.post(`${API_URL}/add-list`, { title: newListTitle }, config);
+      await axios.post(`${API_URL}/add-list`, { title: newListTitle });
       setNewListTitle("");
       fetchData();
     } catch (err) { alert("Failed to add list"); }
@@ -47,8 +43,7 @@ function Home() {
     e.stopPropagation();
     if (window.confirm("Are you sure you want to delete this list?")) {
       try {
-        // Added config here
-        await axios.delete(`${API_URL}/delete-list/${id}`, config);
+        await axios.delete(`${API_URL}/delete-list/${id}`);
         setLists(lists.filter(list => list.id !== id));
       } catch (err) { alert("Error deleting list"); }
     }
@@ -59,20 +54,18 @@ function Home() {
     const newTitle = prompt("Edit List Title:", list.title);
     if (newTitle && newTitle !== list.title) {
       try {
-        // Added config here
-        await axios.put(`${API_URL}/edit-list/${list.id}`, { title: newTitle, status: list.status }, config);
+        await axios.put(`${API_URL}/edit-list/${list.id}`, { title: newTitle, status: list.status });
         fetchData();
       } catch (err) { alert("Error updating list"); }
     }
   };
 
-  // --- Item Handlers ---
+  // --- Item Handlers (New!) ---
   const handleAddItem = async (e, listId) => {
     e.preventDefault();
     if (!newItemDesc.trim()) return;
     try {
-      // Added config here
-      await axios.post(`${API_URL}/add-items`, { list_id: listId, description: newItemDesc }, config);
+      await axios.post(`${API_URL}/add-items`, { list_id: listId, description: newItemDesc });
       setNewItemDesc("");
       fetchData();
     } catch (err) { alert("Error adding item"); }
@@ -81,8 +74,7 @@ function Home() {
   const handleDeleteItem = async (itemId) => {
     if (window.confirm("Delete this item?")) {
       try {
-        // Added config here
-        await axios.delete(`${API_URL}/delete-item/${itemId}`, config);
+        await axios.delete(`${API_URL}/delete-item/${itemId}`);
         fetchData();
       } catch (err) { alert("Error deleting item"); }
     }
@@ -92,11 +84,10 @@ function Home() {
     const newDesc = prompt("Edit Item:", item.description);
     if (newDesc && newDesc !== item.description) {
       try {
-        // Added config here
         await axios.put(`${API_URL}/edit-item/${item.id}`, {
           description: newDesc,
-          status: item.status 
-        }, config);
+          status: item.status // Keeps current status
+        });
         fetchData();
       } catch (err) { alert("Error updating item"); }
     }
@@ -105,18 +96,17 @@ function Home() {
   const toggleStatus = async (item) => {
     const newStatus = item.status === "pending" ? "completed" : "pending";
     try {
-      // Added config here
       await axios.put(`${API_URL}/edit-item/${item.id}`, {
         description: item.description,
         status: newStatus
-      }, config);
+      });
       fetchData();
     } catch (err) { alert("Error updating status"); }
   };
 
   const toggleList = (id) => {
     setExpandedListId(expandedListId === id ? null : id);
-    setNewItemDesc(""); 
+    setNewItemDesc(""); // Reset item input when switching lists
   };
 
   return (
@@ -160,6 +150,7 @@ function Home() {
 
                 {expandedListId === list.id && (
                   <div className="mt-2 ml-4 mr-2 p-4 bg-white rounded-b-xl border-x border-b border-gray-100 shadow-inner">
+                    {/* Add Item Form */}
                     <form onSubmit={(e) => handleAddItem(e, list.id)} className="flex gap-2 mb-4">
                       <input 
                         type="text"
