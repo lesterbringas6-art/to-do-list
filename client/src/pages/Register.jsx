@@ -1,12 +1,14 @@
 import axios from 'axios';
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 function Register() {
   const [name, setName] = useState('');
   const [username, setUname] = useState('');
   const [password, setPass] = useState('');
   const [confirmPassword, setConfirmPass] = useState('');
+
+  const navigate = useNavigate(); // For redirecting after success
 
   const API_URL = import.meta.env.VITE_API_URL || 'https://to-do-list-1e06.onrender.com';
 
@@ -18,15 +20,19 @@ function Register() {
     }
 
     try {
-      const response = await axios.post(`${API_URL}/register`, {
-        name, 
-        username,
-        password,
-        confirm: confirmPassword 
-      });
+      const response = await axios.post(`${API_URL}/register`, 
+        {
+          name, 
+          username,
+          password,
+          confirm: confirmPassword 
+        },
+        { withCredentials: true } // Consistent with your login setup
+      );
 
       if (response.data.success) {
         alert("Registration Successful!");
+        navigate('/'); // Redirect to Login page
       }
     } catch (error) {
       alert(error.response?.data?.message || "Server error");
@@ -34,7 +40,7 @@ function Register() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 flex flex-col items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-slate-700 via-slate-800 to-slate-900 flex flex-col items-center justify-center p-4">
       <div className="max-w-xs w-full bg-white rounded-xl shadow-2xl overflow-hidden border border-gray-100">
         <div className="p-6">
           <div className="text-center mb-5">
@@ -43,7 +49,6 @@ function Register() {
           </div>
 
           <form onSubmit={handleRegister} className="space-y-3.5">
-       
             <div>
               <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1 ml-1">
                 FullName
@@ -71,6 +76,7 @@ function Register() {
                 onChange={(e) => setUname(e.target.value)}
               />
             </div>
+            
             <div>
               <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1 ml-1">
                 Password
@@ -107,9 +113,8 @@ function Register() {
             </button>
             <div className="flex justify-end mt-3 px-1">
               <p className="text-[11px] text-gray-500">
-               {' '}
                 <Link to="/" className="text-slate-800 font-bold hover:underline">
-                  login
+                  Login
                 </Link>
               </p>
             </div>
