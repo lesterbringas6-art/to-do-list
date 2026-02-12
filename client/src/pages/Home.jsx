@@ -11,13 +11,21 @@ function Home() {
   
   const [editingId, setEditingId] = useState(null);
   const [editValue, setEditValue] = useState("");
-  const [status, setStatus] = useState({ message: '', isError: false });
+
+  // Separate status states to prevent messages appearing in two places at once
+  const [listStatus, setListStatus] = useState({ message: '', isError: false });
+  const [itemStatus, setItemStatus] = useState({ message: '', isError: false });
 
   const API_URL = import.meta.env.VITE_API_URL || 'https://to-do-list-1e06.onrender.com';
 
-  const showStatus = (message, isError = false) => {
-    setStatus({ message, isError });
-    setTimeout(() => setStatus({ message: '', isError: false }), 3000);
+  const showListStatus = (message, isError = false) => {
+    setListStatus({ message, isError });
+    setTimeout(() => setListStatus({ message: '', isError: false }), 3000);
+  };
+
+  const showItemStatus = (message, isError = false) => {
+    setItemStatus({ message, isError });
+    setTimeout(() => setItemStatus({ message: '', isError: false }), 3000);
   };
 
   const fetchData = async () => {
@@ -25,7 +33,7 @@ function Home() {
       const response = await axios.get(`${API_URL}/get-lists`);
       setLists(response.data);
     } catch (err) {
-      showStatus("Failed to load lists", true);
+      showListStatus("Failed to load lists", true);
     } finally {
       setLoading(false);
     }
@@ -43,9 +51,9 @@ function Home() {
       await axios.post(`${API_URL}/add-list`, { title: newListTitle });
       setNewListTitle("");
       fetchData();
-      showStatus("List created successfully!"); 
+      showListStatus("List added successfully!"); 
     } catch (err) { 
-      showStatus("Failed to add list", true); 
+      showListStatus("Failed to add list", true); 
     }
   };
 
@@ -54,9 +62,9 @@ function Home() {
     try {
       await axios.delete(`${API_URL}/delete-list/${id}`);
       setLists(lists.filter(list => list.id !== id));
-      showStatus("List deleted");
+      showListStatus("List deleted");
     } catch (err) { 
-      showStatus("Error deleting list", true); 
+      showListStatus("Error deleting list", true); 
     }
   };
 
@@ -69,9 +77,9 @@ function Home() {
       await axios.put(`${API_URL}/edit-list/${list.id}`, { title: editValue, status: list.status });
       setEditingId(null);
       fetchData();
-      showStatus("List title updated");
+      showListStatus("List title updated");
     } catch (err) { 
-      showStatus("Error updating list", true); 
+      showListStatus("Error updating list", true); 
     }
   };
 
@@ -83,9 +91,9 @@ function Home() {
       await axios.post(`${API_URL}/add-items`, { list_id: listId, description: newItemDesc });
       setNewItemDesc("");
       fetchData();
-      showStatus("Item added!");
+      showItemStatus("Item added!");
     } catch (err) { 
-      showStatus("Error adding item", true); 
+      showItemStatus("Error adding item", true); 
     }
   };
 
@@ -93,9 +101,9 @@ function Home() {
     try {
       await axios.delete(`${API_URL}/delete-item/${itemId}`);
       fetchData();
-      showStatus("Item removed");
+      showItemStatus("Item removed");
     } catch (err) { 
-      showStatus("Error deleting item", true); 
+      showItemStatus("Error deleting item", true); 
     }
   };
 
@@ -111,9 +119,9 @@ function Home() {
       });
       setEditingId(null);
       fetchData();
-      showStatus("Item updated");
+      showItemStatus("Item updated");
     } catch (err) { 
-      showStatus("Error updating item", true); 
+      showItemStatus("Error updating item", true); 
     }
   };
 
@@ -125,9 +133,9 @@ function Home() {
         status: newStatus
       });
       fetchData();
-      showStatus(`Item ${newStatus}`);
+      showItemStatus(`Status: ${newStatus}`);
     } catch (err) { 
-      showStatus("Error updating status", true); 
+      showItemStatus("Error updating status", true); 
     }
   };
 
@@ -135,7 +143,7 @@ function Home() {
     setExpandedListId(expandedListId === id ? null : id);
     setNewItemDesc("");
     setEditingId(null);
-    setStatus({ message: '', isError: false }); 
+    setItemStatus({ message: '', isError: false }); // Clear item messages when switching lists
   };
 
   return (
@@ -148,12 +156,12 @@ function Home() {
             <h2 className="text-xl font-bold text-gray-800 uppercase tracking-tight">Lists</h2>
           </div>
 
-          {/* LIST MESSAGE: Above Create New List form */}
-          {status.message && !expandedListId && (
-            <div className={`text-center py-2 px-4 mb-2 rounded-lg text-[10px] font-bold shadow-sm transition-all ${
-              status.isError ? 'bg-red-100 text-red-600' : 'bg-green-100 text-green-600'
+          {/* LIST MESSAGES: Only for Add/Edit/Delete List */}
+          {listStatus.message && (
+            <div className={`text-center py-2 px-4 mb-2 rounded-lg text-[10px] font-bold transition-all shadow-sm ${
+              listStatus.isError ? 'bg-red-100 text-red-600' : 'bg-green-100 text-green-600'
             }`}>
-              {status.message}
+              {listStatus.message}
             </div>
           )}
 
@@ -207,12 +215,12 @@ function Home() {
                 {expandedListId === list.id && (
                   <div className="mt-2 ml-4 mr-2 p-4 bg-white rounded-b-xl border-x border-b border-gray-100 shadow-inner">
                     
-                    {/* ITEM MESSAGE: Above Add Item form */}
-                    {status.message && (
+                    {/* ITEM MESSAGES: Only for actions inside the list */}
+                    {itemStatus.message && (
                       <div className={`mb-2 text-[10px] font-bold px-2 py-1.5 rounded transition-all ${
-                        status.isError ? 'text-red-500 bg-red-50' : 'text-green-600 bg-green-50'
+                        itemStatus.isError ? 'text-red-500 bg-red-50' : 'text-green-600 bg-green-50'
                       }`}>
-                        {status.message}
+                        {itemStatus.message}
                       </div>
                     )}
 
