@@ -5,8 +5,9 @@ import { Link, useNavigate } from 'react-router-dom';
 function App() {
   const [username, setUname] = useState('');
   const [password, setPass] = useState('');
-  // 1. New state for the error message
   const [errorMsg, setErrorMsg] = useState('');
+  // 1. New state for the success message
+  const [successMsg, setSuccessMsg] = useState('');
 
   const navigate = useNavigate();
 
@@ -14,20 +15,26 @@ function App() {
 
   const handleLogin = async () => {
     try {
-      setErrorMsg(''); // Clear previous errors on new attempt
+      setErrorMsg('');
+      setSuccessMsg(''); // Clear previous messages
+      
       const response = await axios.post(`${API_URL}/login`, {
         username,
         password
       });
 
       if (response.data.success) {
-        navigate('/home'); 
+        // 2. Set success message and delay the redirect
+        setSuccessMsg('Login successful! Redirecting...');
+        
+        setTimeout(() => {
+          navigate('/home');
+        }, 1500); // 1.5 second delay
       }
 
     } catch (error) {
-      // 2. Instead of alert(), set the state
       if (error.response) {
-        setErrorMsg(error.response.data.message);
+        setErrorMsg(error.response.data.message || "Invalid credentials");
       } else {
         setErrorMsg("Server error. Please try again.");
       }
@@ -45,11 +52,20 @@ function App() {
 
           <form className="space-y-3.5" onSubmit={(e) => e.preventDefault()}>
             
-            {/* 3. Conditional Error Message UI */}
+            {/* Error Message UI */}
             {errorMsg && (
               <div className="bg-red-50 border-l-4 border-red-500 p-2 mb-4">
                 <p className="text-[11px] text-red-700 font-medium">
                   {errorMsg}
+                </p>
+              </div>
+            )}
+
+            {/* 3. Success Message UI */}
+            {successMsg && (
+              <div className="bg-green-50 border-l-4 border-green-500 p-2 mb-4">
+                <p className="text-[11px] text-green-700 font-medium">
+                  {successMsg}
                 </p>
               </div>
             )}
@@ -83,13 +99,13 @@ function App() {
             <button 
               type="button"
               onClick={handleLogin}
-              className="w-full bg-slate-800 hover:bg-slate-900 text-white font-bold py-2 rounded-md transition-colors text-sm shadow-sm">
-                Login
+              disabled={!!successMsg} // Disable button during redirect delay
+              className={`w-full ${successMsg ? 'bg-green-600' : 'bg-slate-800 hover:bg-slate-900'} text-white font-bold py-2 rounded-md transition-colors text-sm shadow-sm`}>
+                {successMsg ? 'Redirecting...' : 'Login'}
             </button>
             
             <div className="flex justify-end mt-3 px-1">
               <p className="text-[11px] text-gray-500">
-                {' '}
                 <Link to="/register" className="text-slate-800 font-bold hover:underline">
                   Register
                 </Link>
