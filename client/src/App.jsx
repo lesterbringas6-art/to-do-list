@@ -6,7 +6,6 @@ function App() {
   const [username, setUname] = useState('');
   const [password, setPass] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
-  // 1. New state for the success message
   const [successMsg, setSuccessMsg] = useState('');
 
   const navigate = useNavigate();
@@ -16,7 +15,7 @@ function App() {
   const handleLogin = async () => {
     try {
       setErrorMsg('');
-      setSuccessMsg(''); // Clear previous messages
+      setSuccessMsg(''); 
       
       const response = await axios.post(`${API_URL}/login`, {
         username,
@@ -24,12 +23,10 @@ function App() {
       });
 
       if (response.data.success) {
-        // 2. Set success message and delay the redirect
         setSuccessMsg('Login successful! Redirecting...');
-        
         setTimeout(() => {
           navigate('/home');
-        }, 1500); // 1.5 second delay
+        }, 1500);
       }
 
     } catch (error) {
@@ -38,6 +35,8 @@ function App() {
       } else {
         setErrorMsg("Server error. Please try again.");
       }
+      // Auto-clear error after 3 seconds like the Home component
+      setTimeout(() => setErrorMsg(''), 3000);
     }
   };
 
@@ -52,24 +51,6 @@ function App() {
 
           <form className="space-y-3.5" onSubmit={(e) => e.preventDefault()}>
             
-            {/* Error Message UI */}
-            {errorMsg && (
-              <div className="bg-red-50 border-l-4 border-red-500 p-2 mb-4">
-                <p className="text-[11px] text-red-700 font-medium">
-                  {errorMsg}
-                </p>
-              </div>
-            )}
-
-            {/* 3. Success Message UI */}
-            {successMsg && (
-              <div className="bg-green-50 border-l-4 border-green-500 p-2 mb-4">
-                <p className="text-[11px] text-green-700 font-medium">
-                  {successMsg}
-                </p>
-              </div>
-            )}
-
             <div>
               <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1 ml-1">
                 username
@@ -83,7 +64,7 @@ function App() {
               />
             </div>
 
-            <div>
+            <div className="mb-2">
               <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1 ml-1">
                 Password
               </label>
@@ -96,16 +77,31 @@ function App() {
               />
             </div>
 
+            {/* MESSAGE AREA: Centered and dynamic space like Home component */}
+            <div className="flex flex-col items-center justify-center min-h-[20px]">
+              {errorMsg && (
+                <div className="w-full text-center py-1.5 px-2 rounded-lg text-[10px] font-bold bg-red-100 text-red-600 transition-all">
+                  {errorMsg}
+                </div>
+              )}
+              {successMsg && (
+                <div className="w-full text-center py-1.5 px-2 rounded-lg text-[10px] font-bold bg-green-100 text-green-600 transition-all">
+                  {successMsg}
+                </div>
+              )}
+            </div>
+
             <button 
               type="button"
               onClick={handleLogin}
-              disabled={!!successMsg} // Disable button during redirect delay
-              className={`w-full ${successMsg ? 'bg-green-600' : 'bg-slate-800 hover:bg-slate-900'} text-white font-bold py-2 rounded-md transition-colors text-sm shadow-sm`}>
+              disabled={!!successMsg}
+              className={`w-full ${successMsg ? 'bg-green-600' : 'bg-slate-800 hover:bg-slate-900'} text-white font-bold py-2 rounded-md transition-colors text-sm shadow-sm active:scale-95`}>
                 {successMsg ? 'Redirecting...' : 'Login'}
             </button>
             
-            <div className="flex justify-end mt-3 px-1">
+            <div className="flex justify-center mt-3">
               <p className="text-[11px] text-gray-500">
+                Don't have an account? {' '}
                 <Link to="/register" className="text-slate-800 font-bold hover:underline">
                   Register
                 </Link>
