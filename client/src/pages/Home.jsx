@@ -9,10 +9,11 @@ function Home() {
   const [newListTitle, setNewListTitle] = useState("");
   const [newItemDesc, setNewItemDesc] = useState("");
   
-  // Track which item or list is currently being edited to avoid prompt()
+  // State for inline editing (replaces prompts)
   const [editingId, setEditingId] = useState(null);
   const [editValue, setEditValue] = useState("");
 
+  // Centralized status message state
   const [status, setStatus] = useState({ message: '', isError: false });
 
   const API_URL = import.meta.env.VITE_API_URL || 'https://to-do-list-1e06.onrender.com';
@@ -53,11 +54,10 @@ function Home() {
 
   const handleDeleteList = async (e, id) => {
     e.stopPropagation();
-    // Replaced window.confirm with a direct action + status feedback
     try {
       await axios.delete(`${API_URL}/delete-list/${id}`);
       setLists(lists.filter(list => list.id !== id));
-      showStatus("List deleted successfully");
+      showStatus("List deleted");
     } catch (err) { 
       showStatus("Error deleting list", true); 
     }
@@ -128,7 +128,7 @@ function Home() {
         status: newStatus
       });
       fetchData();
-      showStatus(`Marked as ${newStatus}`);
+      showStatus(`Item ${newStatus}`);
     } catch (err) { 
       showStatus("Error updating status", true); 
     }
@@ -138,6 +138,7 @@ function Home() {
     setExpandedListId(expandedListId === id ? null : id);
     setNewItemDesc("");
     setEditingId(null);
+    setStatus({ message: '', isError: false }); // Clear messages when switching lists
   };
 
   return (
@@ -150,10 +151,10 @@ function Home() {
             <h2 className="text-xl font-bold text-gray-800 uppercase tracking-tight">Lists</h2>
           </div>
 
-          {/* Feedback Notification Area */}
-          <div className="h-10">
-            {status.message && (
-              <div className={`text-center py-2 px-4 rounded-lg text-xs font-bold transition-all animate-pulse ${
+          {/* Global/Top feedback area (Used for List actions) */}
+          <div className="h-6 mb-2">
+            {(status.message && !expandedListId) && (
+              <div className={`text-center py-1 px-4 rounded-lg text-[10px] font-bold transition-all ${
                 status.isError ? 'bg-red-100 text-red-600' : 'bg-green-100 text-green-600'
               }`}>
                 {status.message}
@@ -210,7 +211,9 @@ function Home() {
 
                 {expandedListId === list.id && (
                   <div className="mt-2 ml-4 mr-2 p-4 bg-white rounded-b-xl border-x border-b border-gray-100 shadow-inner">
-                    <form onSubmit={(e) => handleAddItem(e, list.id)} className="flex gap-2 mb-4">
+                    
+                    {/* Add Item Form */}
+                    <form onSubmit={(e) => handleAddItem(e, list.id)} className="flex gap-2 mb-2">
                       <input 
                         type="text"
                         value={newItemDesc}
@@ -221,7 +224,19 @@ function Home() {
                       <button type="submit" className="bg-slate-200 text-slate-800 px-3 py-2 rounded-lg text-sm font-bold hover:bg-slate-300">+</button>
                     </form>
 
-                    <ul className="space-y-2">
+                    {/* ITEM FEEDBACK MESSAGE: Above list, below Add Form */}
+                    <div className="h-6 flex items-center overflow-hidden">
+                      {status.message && (
+                        <div className={`text-[10px] font-bold px-2 py-1 rounded w-full transition-all ${
+                          status.isError ? 'text-red-500 bg-red-50' : 'text-green-600 bg-green-50'
+                        }`}>
+                          {status.message}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Items List */}
+                    <ul className="space-y-2 mt-2">
                       {list.items && list.items.length > 0 ? (
                         list.items.map((item) => (
                           <li key={item.id} className="flex items-center justify-between p-3 rounded-lg bg-gray-50 border border-gray-100 group">
