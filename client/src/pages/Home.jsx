@@ -7,18 +7,25 @@ function Home() {
   const [loading, setLoading] = useState(true);
   const [expandedListId, setExpandedListId] = useState(null);
   const [newListTitle, setNewListTitle] = useState("");
-  
-  // State for the new item description input
   const [newItemDesc, setNewItemDesc] = useState("");
+  
+  // 1. Centralized status message state
+  const [status, setStatus] = useState({ message: '', isError: false });
 
   const API_URL = import.meta.env.VITE_API_URL || 'https://to-do-list-1e06.onrender.com';
+
+  // Helper to show messages that disappear after 3 seconds
+  const showStatus = (message, isError = false) => {
+    setStatus({ message, isError });
+    setTimeout(() => setStatus({ message: '', isError: false }), 3000);
+  };
 
   const fetchData = async () => {
     try {
       const response = await axios.get(`${API_URL}/get-lists`);
       setLists(response.data);
     } catch (err) {
-      console.error("Error fetching data:", err);
+      showStatus("Failed to load lists", true);
     } finally {
       setLoading(false);
     }
@@ -36,7 +43,10 @@ function Home() {
       await axios.post(`${API_URL}/add-list`, { title: newListTitle });
       setNewListTitle("");
       fetchData();
-    } catch (err) { alert("Failed to add list"); }
+      showStatus("List created!"); 
+    } catch (err) { 
+      showStatus("Failed to add list", true); 
+    }
   };
 
   const handleDeleteList = async (e, id) => {
@@ -45,7 +55,10 @@ function Home() {
       try {
         await axios.delete(`${API_URL}/delete-list/${id}`);
         setLists(lists.filter(list => list.id !== id));
-      } catch (err) { alert("Error deleting list"); }
+        showStatus("List deleted");
+      } catch (err) { 
+        showStatus("Error deleting list", true); 
+      }
     }
   };
 
@@ -56,11 +69,14 @@ function Home() {
       try {
         await axios.put(`${API_URL}/edit-list/${list.id}`, { title: newTitle, status: list.status });
         fetchData();
-      } catch (err) { alert("Error updating list"); }
+        showStatus("Title updated");
+      } catch (err) { 
+        showStatus("Error updating list", true); 
+      }
     }
   };
 
-  // --- Item Handlers (New!) ---
+  // --- Item Handlers ---
   const handleAddItem = async (e, listId) => {
     e.preventDefault();
     if (!newItemDesc.trim()) return;
@@ -68,7 +84,9 @@ function Home() {
       await axios.post(`${API_URL}/add-items`, { list_id: listId, description: newItemDesc });
       setNewItemDesc("");
       fetchData();
-    } catch (err) { alert("Error adding item"); }
+    } catch (err) { 
+      showStatus("Error adding item", true); 
+    }
   };
 
   const handleDeleteItem = async (itemId) => {
@@ -76,7 +94,10 @@ function Home() {
       try {
         await axios.delete(`${API_URL}/delete-item/${itemId}`);
         fetchData();
-      } catch (err) { alert("Error deleting item"); }
+        showStatus("Item removed");
+      } catch (err) { 
+        showStatus("Error deleting item", true); 
+      }
     }
   };
 
@@ -86,10 +107,12 @@ function Home() {
       try {
         await axios.put(`${API_URL}/edit-item/${item.id}`, {
           description: newDesc,
-          status: item.status // Keeps current status
+          status: item.status
         });
         fetchData();
-      } catch (err) { alert("Error updating item"); }
+      } catch (err) { 
+        showStatus("Error updating item", true); 
+      }
     }
   };
 
@@ -101,12 +124,14 @@ function Home() {
         status: newStatus
       });
       fetchData();
-    } catch (err) { alert("Error updating status"); }
+    } catch (err) { 
+      showStatus("Error updating status", true); 
+    }
   };
 
   const toggleList = (id) => {
     setExpandedListId(expandedListId === id ? null : id);
-    setNewItemDesc(""); // Reset item input when switching lists
+    setNewItemDesc("");
   };
 
   return (
@@ -114,8 +139,20 @@ function Home() {
       <Header />
       <main className="flex-grow flex flex-col items-center justify-start p-6">
         <div className="max-w-md w-full space-y-3">
+          
           <div className="text-center mb-6">
             <h2 className="text-xl font-bold text-gray-800 uppercase tracking-tight">Lists</h2>
+          </div>
+
+          {/* 2. Feedback Notification Area */}
+          <div className="h-10"> {/* Fixed height prevents list jumping when msg appears */}
+            {status.message && (
+              <div className={`text-center py-2 px-4 rounded-lg text-xs font-bold transition-all ${
+                status.isError ? 'bg-red-100 text-red-600' : 'bg-green-100 text-green-600'
+              }`}>
+                {status.message}
+              </div>
+            )}
           </div>
 
           <form onSubmit={handleAddList} className="flex gap-2 mb-6">
@@ -150,7 +187,6 @@ function Home() {
 
                 {expandedListId === list.id && (
                   <div className="mt-2 ml-4 mr-2 p-4 bg-white rounded-b-xl border-x border-b border-gray-100 shadow-inner">
-                    {/* Add Item Form */}
                     <form onSubmit={(e) => handleAddItem(e, list.id)} className="flex gap-2 mb-4">
                       <input 
                         type="text"

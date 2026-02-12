@@ -1,17 +1,20 @@
 import axios from 'axios';
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom'; // 1. Import useNavigate
+import { Link, useNavigate } from 'react-router-dom';
 
 function App() {
   const [username, setUname] = useState('');
   const [password, setPass] = useState('');
-  
-  const navigate = useNavigate(); // 2. Initialize navigate
+  // 1. New state for the error message
+  const [errorMsg, setErrorMsg] = useState('');
+
+  const navigate = useNavigate();
 
   const API_URL = import.meta.env.VITE_API_URL || 'https://to-do-list-1e06.onrender.com';
 
   const handleLogin = async () => {
     try {
+      setErrorMsg(''); // Clear previous errors on new attempt
       const response = await axios.post(`${API_URL}/login`, {
         username,
         password
@@ -22,16 +25,17 @@ function App() {
       }
 
     } catch (error) {
+      // 2. Instead of alert(), set the state
       if (error.response) {
-        alert(error.response.data.message);
+        setErrorMsg(error.response.data.message);
       } else {
-        alert("Server error. Please try again.");
+        setErrorMsg("Server error. Please try again.");
       }
     }
   };
 
   return (
-<div className="min-h-screen bg-gradient-to-br from-slate-700 via-slate-800 to-slate-900 flex flex-col items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-slate-700 via-slate-800 to-slate-900 flex flex-col items-center justify-center p-4">
       <div className="max-w-xs w-full bg-white rounded-xl shadow-2xl overflow-hidden border border-gray-100">
         <div className="p-6">
           <div className="text-center mb-5">
@@ -40,6 +44,16 @@ function App() {
           </div>
 
           <form className="space-y-3.5" onSubmit={(e) => e.preventDefault()}>
+            
+            {/* 3. Conditional Error Message UI */}
+            {errorMsg && (
+              <div className="bg-red-50 border-l-4 border-red-500 p-2 mb-4">
+                <p className="text-[11px] text-red-700 font-medium">
+                  {errorMsg}
+                </p>
+              </div>
+            )}
+
             <div>
               <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1 ml-1">
                 username

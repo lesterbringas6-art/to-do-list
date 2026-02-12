@@ -7,14 +7,21 @@ function Register() {
   const [username, setUname] = useState('');
   const [password, setPass] = useState('');
   const [confirmPassword, setConfirmPass] = useState('');
+  
+  // 1. New states for feedback
+  const [msg, setMsg] = useState('');
+  const [isError, setIsError] = useState(false);
 
   const API_URL = import.meta.env.VITE_API_URL || 'https://to-do-list-1e06.onrender.com';
 
   const handleRegister = async (e) => {
     e.preventDefault();
+    setMsg(''); // Clear message on new attempt
 
     if (password !== confirmPassword) {
-      return alert("Passwords do not match!");
+      setMsg("Passwords do not match!");
+      setIsError(true);
+      return;
     }
 
     try {
@@ -26,10 +33,17 @@ function Register() {
       });
 
       if (response.data.success) {
-        alert("Registration Successful!");
+        setMsg("Registration Successful!");
+        setIsError(false);
+        // Optional: clear form fields on success
+        setName('');
+        setUname('');
+        setPass('');
+        setConfirmPass('');
       }
     } catch (error) {
-      alert(error.response?.data?.message || "Server error");
+      setMsg(error.response?.data?.message || "Server error");
+      setIsError(true);
     }
   };
 
@@ -43,7 +57,18 @@ function Register() {
           </div>
 
           <form onSubmit={handleRegister} className="space-y-3.5">
-       
+            
+            {/* 2. Feedback Message Display */}
+            {msg && (
+              <div className={`p-2 rounded border-l-4 ${
+                isError 
+                  ? 'bg-red-50 border-red-500 text-red-700' 
+                  : 'bg-green-50 border-green-500 text-green-700'
+              }`}>
+                <p className="text-[11px] font-medium">{msg}</p>
+              </div>
+            )}
+
             <div>
               <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1 ml-1">
                 FullName
@@ -71,6 +96,7 @@ function Register() {
                 onChange={(e) => setUname(e.target.value)}
               />
             </div>
+
             <div>
               <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1 ml-1">
                 Password
@@ -105,9 +131,9 @@ function Register() {
             >
               Register
             </button>
+
             <div className="flex justify-end mt-3 px-1">
               <p className="text-[11px] text-gray-500">
-               {' '}
                 <Link to="/" className="text-slate-800 font-bold hover:underline">
                   login
                 </Link>
