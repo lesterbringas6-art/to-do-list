@@ -9,12 +9,14 @@ function Home() {
   const [newListTitle, setNewListTitle] = useState("");
   const [newItemDesc, setNewItemDesc] = useState("");
   
-  // 1. Centralized status message state
+  // --- New UI States ---
   const [status, setStatus] = useState({ message: '', isError: false });
+  const [editingId, setEditingId] = useState(null); // Track which List or Item is being edited
+  const [editValue, setEditValue] = useState("");  // Temporary value for the input field
+  const [confirmDelete, setConfirmDelete] = useState({ id: null, type: null }); // {id: 1, type: 'list'}
 
   const API_URL = import.meta.env.VITE_API_URL || 'https://to-do-list-1e06.onrender.com';
 
-  // Helper to show messages that disappear after 3 seconds
   const showStatus = (message, isError = false) => {
     setStatus({ message, isError });
     setTimeout(() => setStatus({ message: '', isError: false }), 3000);
@@ -44,36 +46,29 @@ function Home() {
       setNewListTitle("");
       fetchData();
       showStatus("List created!"); 
-    } catch (err) { 
-      showStatus("Failed to add list", true); 
-    }
+    } catch (err) { showStatus("Failed to add list", true); }
   };
 
-  const handleDeleteList = async (e, id) => {
-    e.stopPropagation();
-    if (window.confirm("Are you sure you want to delete this list?")) {
-      try {
-        await axios.delete(`${API_URL}/delete-list/${id}`);
-        setLists(lists.filter(list => list.id !== id));
-        showStatus("List deleted");
-      } catch (err) { 
-        showStatus("Error deleting list", true); 
-      }
+  const submitListEdit = async (listId, currentStatus) => {
+    if (!editValue.trim()) {
+        setEditingId(null);
+        return;
     }
+    try {
+      await axios.put(`${API_URL}/edit-list/${listId}`, { title: editValue, status: currentStatus });
+      setEditingId(null);
+      fetchData();
+      showStatus("List updated");
+    } catch (err) { showStatus("Update failed", true); }
   };
 
-  const handleEditList = async (e, list) => {
-    e.stopPropagation();
-    const newTitle = prompt("Edit List Title:", list.title);
-    if (newTitle && newTitle !== list.title) {
-      try {
-        await axios.put(`${API_URL}/edit-list/${list.id}`, { title: newTitle, status: list.status });
-        fetchData();
-        showStatus("Title updated");
-      } catch (err) { 
-        showStatus("Error updating list", true); 
-      }
-    }
+  const executeDeleteList = async (id) => {
+    try {
+      await axios.delete(`${API_URL}/delete-list/${id}`);
+      setLists(lists.filter(list => list.id !== id));
+      setConfirmDelete({ id: null, type: null });
+      showStatus("List deleted");
+    } catch (err) { showStatus("Delete failed", true); }
   };
 
   // --- Item Handlers ---
@@ -84,36 +79,31 @@ function Home() {
       await axios.post(`${API_URL}/add-items`, { list_id: listId, description: newItemDesc });
       setNewItemDesc("");
       fetchData();
-    } catch (err) { 
-      showStatus("Error adding item", true); 
-    }
+    } catch (err) { showStatus("Error adding item", true); }
   };
 
-  const handleDeleteItem = async (itemId) => {
-    if (window.confirm("Delete this item?")) {
-      try {
-        await axios.delete(`${API_URL}/delete-item/${itemId}`);
-        fetchData();
-        showStatus("Item removed");
-      } catch (err) { 
-        showStatus("Error deleting item", true); 
-      }
+  const submitItemEdit = async (item) => {
+    if (!editValue.trim()) {
+        setEditingId(null);
+        return;
     }
+    try {
+      await axios.put(`${API_URL}/edit-item/${item.id}`, {
+        description: editValue,
+        status: item.status
+      });
+      setEditingId(null);
+      fetchData();
+    } catch (err) { showStatus("Update failed", true); }
   };
 
-  const handleEditItem = async (item) => {
-    const newDesc = prompt("Edit Item:", item.description);
-    if (newDesc && newDesc !== item.description) {
-      try {
-        await axios.put(`${API_URL}/edit-item/${item.id}`, {
-          description: newDesc,
-          status: item.status
-        });
-        fetchData();
-      } catch (err) { 
-        showStatus("Error updating item", true); 
-      }
-    }
+  const executeDeleteItem = async (itemId) => {
+    try {
+      await axios.delete(`${API_URL}/delete-item/${itemId}`);
+      setConfirmDelete({ id: null, type: null });
+      fetchData();
+      showStatus("Item removed");
+    } catch (err) { showStatus("Delete failed", true); }
   };
 
   const toggleStatus = async (item) => {
@@ -124,14 +114,7 @@ function Home() {
         status: newStatus
       });
       fetchData();
-    } catch (err) { 
-      showStatus("Error updating status", true); 
-    }
-  };
-
-  const toggleList = (id) => {
-    setExpandedListId(expandedListId === id ? null : id);
-    setNewItemDesc("");
+    } catch (err) { showStatus("Error updating status", true); }
   };
 
   return (
@@ -144,10 +127,9 @@ function Home() {
             <h2 className="text-xl font-bold text-gray-800 uppercase tracking-tight">Lists</h2>
           </div>
 
-          {/* 2. Feedback Notification Area */}
-          <div className="h-10"> {/* Fixed height prevents list jumping when msg appears */}
+          <div className="h-10">
             {status.message && (
-              <div className={`text-center py-2 px-4 rounded-lg text-xs font-bold transition-all ${
+              <div className={`text-center py-2 px-4 rounded-lg text-xs font-bold ${
                 status.isError ? 'bg-red-100 text-red-600' : 'bg-green-100 text-green-600'
               }`}>
                 {status.message}
@@ -161,7 +143,7 @@ function Home() {
               value={newListTitle}
               onChange={(e) => setNewListTitle(e.target.value)}
               placeholder="Create a new list..."
-              className="flex-grow px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-slate-800 outline-none shadow-sm"
+              className="flex-grow px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-slate-800 outline-none shadow-sm text-sm"
             />
             <button type="submit" className="bg-slate-800 text-white px-5 py-3 rounded-xl font-bold hover:bg-slate-700 active:scale-95 shadow-md">+</button>
           </form>
@@ -172,15 +154,45 @@ function Home() {
             lists.map((list) => (
               <div key={list.id} className="w-full">
                 <div 
-                  onClick={() => toggleList(list.id)}
+                  onClick={() => expandedListId === list.id ? setExpandedListId(null) : setExpandedListId(list.id)}
                   className={`w-full flex items-center justify-between px-5 py-4 rounded-xl border cursor-pointer transition-all duration-200 ${
                     expandedListId === list.id ? 'bg-slate-800 border-slate-800 text-white shadow-lg' : 'bg-white border-gray-200 text-gray-700 hover:border-slate-400 shadow-sm'
                   }`}
                 >
-                  <span className="text-xs font-bold uppercase tracking-widest">{list.title}</span>
+                  {editingId === list.id ? (
+                    <input 
+                        autoFocus
+                        className="text-xs font-bold uppercase bg-transparent border-b border-white outline-none w-1/2"
+                        value={editValue}
+                        onChange={(e) => setEditValue(e.target.value)}
+                        onClick={(e) => e.stopPropagation()}
+                        onBlur={() => submitListEdit(list.id, list.status)}
+                        onKeyDown={(e) => e.key === 'Enter' && submitListEdit(list.id, list.status)}
+                    />
+                  ) : (
+                    <span className="text-xs font-bold uppercase tracking-widest">{list.title}</span>
+                  )}
+
                   <div className="flex items-center gap-4">
-                    <button onClick={(e) => handleEditList(e, list)} className="text-gray-400 hover:text-blue-400 text-xs">✎</button>
-                    <button onClick={(e) => handleDeleteList(e, list.id)} className="text-gray-400 hover:text-red-500 text-xs">✕</button>
+                    {/* Inline Delete Confirm for List */}
+                    {confirmDelete.id === list.id && confirmDelete.type === 'list' ? (
+                        <div className="flex gap-2">
+                            <button onClick={(e) => {e.stopPropagation(); executeDeleteList(list.id)}} className="text-[10px] bg-red-500 text-white px-2 py-1 rounded">Confirm</button>
+                            <button onClick={(e) => {e.stopPropagation(); setConfirmDelete({id:null, type:null})}} className="text-[10px] text-gray-400">Cancel</button>
+                        </div>
+                    ) : (
+                        <>
+                            <button onClick={(e) => {
+                                e.stopPropagation(); 
+                                setEditingId(list.id); 
+                                setEditValue(list.title);
+                            }} className="text-gray-400 hover:text-blue-400 text-xs">✎</button>
+                            <button onClick={(e) => {
+                                e.stopPropagation(); 
+                                setConfirmDelete({id: list.id, type: 'list'});
+                            }} className="text-gray-400 hover:text-red-500 text-xs">✕</button>
+                        </>
+                    )}
                     <span className="text-xl font-light ml-2">{expandedListId === list.id ? '−' : '+'}</span>
                   </div>
                 </div>
@@ -202,20 +214,38 @@ function Home() {
                       {list.items && list.items.length > 0 ? (
                         list.items.map((item) => (
                           <li key={item.id} className="flex items-center justify-between p-3 rounded-lg bg-gray-50 border border-gray-100 group">
-                            <div className="flex flex-col">
-                              <span className={`text-sm font-medium ${item.status === 'completed' ? 'line-through text-gray-400' : 'text-gray-600'}`}>
-                                {item.description}
-                              </span>
-                              <span 
-                                onClick={() => toggleStatus(item)}
-                                className="text-[9px] font-bold cursor-pointer text-blue-500 uppercase hover:underline"
-                              >
+                            <div className="flex flex-col flex-grow">
+                              {editingId === item.id ? (
+                                <input 
+                                    autoFocus
+                                    className="text-sm font-medium bg-white border border-slate-300 rounded px-1 outline-none"
+                                    value={editValue}
+                                    onChange={(e) => setEditValue(e.target.value)}
+                                    onBlur={() => submitItemEdit(item)}
+                                    onKeyDown={(e) => e.key === 'Enter' && submitItemEdit(item)}
+                                />
+                              ) : (
+                                <span className={`text-sm font-medium ${item.status === 'completed' ? 'line-through text-gray-400' : 'text-gray-600'}`}>
+                                    {item.description}
+                                </span>
+                              )}
+                              <span onClick={() => toggleStatus(item)} className="text-[9px] font-bold cursor-pointer text-blue-500 uppercase hover:underline">
                                 {item.status}
                               </span>
                             </div>
-                            <div className="flex items-center gap-3 opacity-0 group-hover:opacity-100 transition-opacity">
-                              <button onClick={() => handleEditItem(item)} className="text-gray-400 hover:text-blue-500 text-[10px]">EDIT</button>
-                              <button onClick={() => handleDeleteItem(item.id)} className="text-gray-400 hover:text-red-500 text-[10px]">DEL</button>
+
+                            <div className="flex items-center gap-3">
+                              {confirmDelete.id === item.id && confirmDelete.type === 'item' ? (
+                                <div className="flex gap-2">
+                                    <button onClick={() => executeDeleteItem(item.id)} className="text-[9px] text-red-600 font-bold underline">DELETE?</button>
+                                    <button onClick={() => setConfirmDelete({id:null, type:null})} className="text-[9px] text-gray-400 font-bold">NO</button>
+                                </div>
+                              ) : (
+                                <div className="flex items-center gap-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <button onClick={() => {setEditingId(item.id); setEditValue(item.description)}} className="text-gray-400 hover:text-blue-500 text-[10px]">EDIT</button>
+                                    <button onClick={() => setConfirmDelete({id: item.id, type: 'item'})} className="text-gray-400 hover:text-red-500 text-[10px]">DEL</button>
+                                </div>
+                              )}
                             </div>
                           </li>
                         ))
