@@ -9,11 +9,8 @@ function Home() {
   const [newListTitle, setNewListTitle] = useState("");
   const [newItemDesc, setNewItemDesc] = useState("");
   
-  // State for inline editing
   const [editingId, setEditingId] = useState(null);
   const [editValue, setEditValue] = useState("");
-
-  // Centralized status message state
   const [status, setStatus] = useState({ message: '', isError: false });
 
   const API_URL = import.meta.env.VITE_API_URL || 'https://to-do-list-1e06.onrender.com';
@@ -142,7 +139,7 @@ function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 flex flex-col font-sans">
+    <div className="min-h-screen bg-gray-100 flex flex-col">
       <Header />
       <main className="flex-grow flex flex-col items-center justify-start p-6">
         <div className="max-w-md w-full space-y-3">
@@ -151,9 +148,9 @@ function Home() {
             <h2 className="text-xl font-bold text-gray-800 uppercase tracking-tight">Lists</h2>
           </div>
 
-          {/* Global message (only visible if no list is expanded) */}
+          {/* LIST MESSAGE: Above Create New List form */}
           {status.message && !expandedListId && (
-            <div className={`text-center py-2 px-4 mb-4 rounded-lg text-[10px] font-bold animate-in fade-in slide-in-from-top-1 duration-300 ${
+            <div className={`text-center py-2 px-4 mb-2 rounded-lg text-[10px] font-bold shadow-sm transition-all ${
               status.isError ? 'bg-red-100 text-red-600' : 'bg-green-100 text-green-600'
             }`}>
               {status.message}
@@ -166,7 +163,7 @@ function Home() {
               value={newListTitle}
               onChange={(e) => setNewListTitle(e.target.value)}
               placeholder="Create a new list..."
-              className="flex-grow px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-slate-800 outline-none shadow-sm transition-all"
+              className="flex-grow px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-slate-800 outline-none shadow-sm"
             />
             <button type="submit" className="bg-slate-800 text-white px-5 py-3 rounded-xl font-bold hover:bg-slate-700 active:scale-95 shadow-md">+</button>
           </form>
@@ -210,7 +207,16 @@ function Home() {
                 {expandedListId === list.id && (
                   <div className="mt-2 ml-4 mr-2 p-4 bg-white rounded-b-xl border-x border-b border-gray-100 shadow-inner">
                     
-                    <form onSubmit={(e) => handleAddItem(e, list.id)} className="flex gap-2 mb-2">
+                    {/* ITEM MESSAGE: Above Add Item form */}
+                    {status.message && (
+                      <div className={`mb-2 text-[10px] font-bold px-2 py-1.5 rounded transition-all ${
+                        status.isError ? 'text-red-500 bg-red-50' : 'text-green-600 bg-green-50'
+                      }`}>
+                        {status.message}
+                      </div>
+                    )}
+
+                    <form onSubmit={(e) => handleAddItem(e, list.id)} className="flex gap-2 mb-4">
                       <input 
                         type="text"
                         value={newItemDesc}
@@ -220,15 +226,6 @@ function Home() {
                       />
                       <button type="submit" className="bg-slate-200 text-slate-800 px-3 py-2 rounded-lg text-sm font-bold hover:bg-slate-300">+</button>
                     </form>
-
-                    {/* DYNAMIC FEEDBACK: No fixed height, disappears when empty */}
-                    {status.message && (
-                      <div className={`mb-3 text-[10px] font-bold px-2 py-1.5 rounded transition-all animate-bounce-short ${
-                        status.isError ? 'text-red-500 bg-red-50' : 'text-green-600 bg-green-50'
-                      }`}>
-                        {status.message}
-                      </div>
-                    )}
 
                     <ul className="space-y-2">
                       {list.items && list.items.length > 0 ? (
