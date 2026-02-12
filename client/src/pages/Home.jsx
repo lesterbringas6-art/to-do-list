@@ -9,7 +9,7 @@ function Home() {
   const [newListTitle, setNewListTitle] = useState("");
   const [newItemDesc, setNewItemDesc] = useState("");
   
-  // State for inline editing (replaces prompts)
+  // State for inline editing
   const [editingId, setEditingId] = useState(null);
   const [editValue, setEditValue] = useState("");
 
@@ -138,11 +138,11 @@ function Home() {
     setExpandedListId(expandedListId === id ? null : id);
     setNewItemDesc("");
     setEditingId(null);
-    setStatus({ message: '', isError: false }); // Clear messages when switching lists
+    setStatus({ message: '', isError: false }); 
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 flex flex-col">
+    <div className="min-h-screen bg-gray-100 flex flex-col font-sans">
       <Header />
       <main className="flex-grow flex flex-col items-center justify-start p-6">
         <div className="max-w-md w-full space-y-3">
@@ -151,16 +151,14 @@ function Home() {
             <h2 className="text-xl font-bold text-gray-800 uppercase tracking-tight">Lists</h2>
           </div>
 
-          {/* Global/Top feedback area (Used for List actions) */}
-          <div className="h-6 mb-2">
-            {(status.message && !expandedListId) && (
-              <div className={`text-center py-1 px-4 rounded-lg text-[10px] font-bold transition-all ${
-                status.isError ? 'bg-red-100 text-red-600' : 'bg-green-100 text-green-600'
-              }`}>
-                {status.message}
-              </div>
-            )}
-          </div>
+          {/* Global message (only visible if no list is expanded) */}
+          {status.message && !expandedListId && (
+            <div className={`text-center py-2 px-4 mb-4 rounded-lg text-[10px] font-bold animate-in fade-in slide-in-from-top-1 duration-300 ${
+              status.isError ? 'bg-red-100 text-red-600' : 'bg-green-100 text-green-600'
+            }`}>
+              {status.message}
+            </div>
+          )}
 
           <form onSubmit={handleAddList} className="flex gap-2 mb-6">
             <input 
@@ -168,7 +166,7 @@ function Home() {
               value={newListTitle}
               onChange={(e) => setNewListTitle(e.target.value)}
               placeholder="Create a new list..."
-              className="flex-grow px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-slate-800 outline-none shadow-sm"
+              className="flex-grow px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-slate-800 outline-none shadow-sm transition-all"
             />
             <button type="submit" className="bg-slate-800 text-white px-5 py-3 rounded-xl font-bold hover:bg-slate-700 active:scale-95 shadow-md">+</button>
           </form>
@@ -212,7 +210,6 @@ function Home() {
                 {expandedListId === list.id && (
                   <div className="mt-2 ml-4 mr-2 p-4 bg-white rounded-b-xl border-x border-b border-gray-100 shadow-inner">
                     
-                    {/* Add Item Form */}
                     <form onSubmit={(e) => handleAddItem(e, list.id)} className="flex gap-2 mb-2">
                       <input 
                         type="text"
@@ -224,19 +221,16 @@ function Home() {
                       <button type="submit" className="bg-slate-200 text-slate-800 px-3 py-2 rounded-lg text-sm font-bold hover:bg-slate-300">+</button>
                     </form>
 
-                    {/* ITEM FEEDBACK MESSAGE: Above list, below Add Form */}
-                    <div className="h-6 flex items-center overflow-hidden">
-                      {status.message && (
-                        <div className={`text-[10px] font-bold px-2 py-1 rounded w-full transition-all ${
-                          status.isError ? 'text-red-500 bg-red-50' : 'text-green-600 bg-green-50'
-                        }`}>
-                          {status.message}
-                        </div>
-                      )}
-                    </div>
+                    {/* DYNAMIC FEEDBACK: No fixed height, disappears when empty */}
+                    {status.message && (
+                      <div className={`mb-3 text-[10px] font-bold px-2 py-1.5 rounded transition-all animate-bounce-short ${
+                        status.isError ? 'text-red-500 bg-red-50' : 'text-green-600 bg-green-50'
+                      }`}>
+                        {status.message}
+                      </div>
+                    )}
 
-                    {/* Items List */}
-                    <ul className="space-y-2 mt-2">
+                    <ul className="space-y-2">
                       {list.items && list.items.length > 0 ? (
                         list.items.map((item) => (
                           <li key={item.id} className="flex items-center justify-between p-3 rounded-lg bg-gray-50 border border-gray-100 group">
