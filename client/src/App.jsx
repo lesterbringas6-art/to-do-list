@@ -35,7 +35,7 @@ function App() {
       } else {
         setErrorMsg("Server error. Please try again.");
       }
-      // Auto-clear error after 3 seconds like the Home component
+      // Auto-clear error after 3 seconds
       setTimeout(() => setErrorMsg(''), 3000);
     }
   };
@@ -51,6 +51,22 @@ function App() {
 
           <form className="space-y-3.5" onSubmit={(e) => e.preventDefault()}>
             
+            {/* MESSAGE AREA: Now above Username, zero space when empty */}
+            {(errorMsg || successMsg) && (
+              <div className="transition-all duration-300">
+                {errorMsg && (
+                  <div className="w-full text-center py-2 px-2 rounded-lg text-[10px] font-bold bg-red-100 text-red-600 mb-2">
+                    {errorMsg}
+                  </div>
+                )}
+                {successMsg && (
+                  <div className="w-full text-center py-2 px-2 rounded-lg text-[10px] font-bold bg-green-100 text-green-600 mb-2">
+                    {successMsg}
+                  </div>
+                )}
+              </div>
+            )}
+
             <div>
               <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1 ml-1">
                 username
@@ -64,7 +80,7 @@ function App() {
               />
             </div>
 
-            <div className="mb-2">
+            <div>
               <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1 ml-1">
                 Password
               </label>
@@ -77,25 +93,11 @@ function App() {
               />
             </div>
 
-            {/* MESSAGE AREA: Centered and dynamic space like Home component */}
-            <div className="flex flex-col items-center justify-center min-h-[20px]">
-              {errorMsg && (
-                <div className="w-full text-center py-1.5 px-2 rounded-lg text-[10px] font-bold bg-red-100 text-red-600 transition-all">
-                  {errorMsg}
-                </div>
-              )}
-              {successMsg && (
-                <div className="w-full text-center py-1.5 px-2 rounded-lg text-[10px] font-bold bg-green-100 text-green-600 transition-all">
-                  {successMsg}
-                </div>
-              )}
-            </div>
-
             <button 
               type="button"
               onClick={handleLogin}
               disabled={!!successMsg}
-              className={`w-full ${successMsg ? 'bg-green-600' : 'bg-slate-800 hover:bg-slate-900'} text-white font-bold py-2 rounded-md transition-colors text-sm shadow-sm active:scale-95`}>
+              className={`w-full ${successMsg ? 'bg-green-600' : 'bg-slate-800 hover:bg-slate-900'} text-white font-bold py-2 rounded-md transition-colors text-sm shadow-sm active:scale-95 mt-2`}>
                 {successMsg ? 'Redirecting...' : 'Login'}
             </button>
             
