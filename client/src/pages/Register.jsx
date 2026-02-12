@@ -8,7 +8,6 @@ function Register() {
   const [password, setPass] = useState('');
   const [confirmPassword, setConfirmPass] = useState('');
   
-  // 1. New states for feedback
   const [msg, setMsg] = useState('');
   const [isError, setIsError] = useState(false);
 
@@ -16,7 +15,7 @@ function Register() {
 
   const handleRegister = async (e) => {
     e.preventDefault();
-    setMsg(''); // Clear message on new attempt
+    setMsg(''); 
 
     if (password !== confirmPassword) {
       setMsg("Passwords do not match!");
@@ -35,7 +34,6 @@ function Register() {
       if (response.data.success) {
         setMsg("Registration Successful!");
         setIsError(false);
-        // Optional: clear form fields on success
         setName('');
         setUname('');
         setPass('');
